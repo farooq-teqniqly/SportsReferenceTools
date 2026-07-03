@@ -8,8 +8,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-and-test:
-    name: Build and Test
+  format-check:
+    name: Format Check
     runs-on: ubuntu-latest
 
     steps:
@@ -21,25 +21,15 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
-      - name: Restore dependencies
-        run: dotnet restore
-
       - name: Verify formatting
         run: |
           dotnet tool restore
           dotnet csharpier check .
 
-      - name: Build solution
-        run: dotnet build --configuration Release --no-restore
-
-      - name: Run tests
-        run: dotnet test --configuration Release --no-build --verbosity normal --collect:"XPlat Code Coverage"
-
   sonarqube-analysis:
-    name: SonarQube Code Analysis
+    name: Build, Test and SonarQube Analysis
     runs-on: ubuntu-latest
-    needs: build-and-test
-    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    needs: format-check
 
     env:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
