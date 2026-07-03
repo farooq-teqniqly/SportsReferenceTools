@@ -16,8 +16,8 @@ http:
     - name: Accept-Encoding
       value: gzip, deflate
     - name: Referer
-      value: "{{year}}-schedule.shtml"
-  auth: inherit
+      value: https://www.baseball-reference.com/leagues/majors/{{year}}-schedule.shtml
+  auth: none
 
 runtime:
   scripts:
@@ -26,6 +26,6 @@ runtime:
 
 settings:
   encodeUrl: true
-  timeout: 0
+  timeout: 30000
   followRedirects: true
   maxRedirects: 5
