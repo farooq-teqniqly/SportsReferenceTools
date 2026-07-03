@@ -35,6 +35,11 @@
 *.bru          text eol=lf
 
 #
+# Git hooks (extensionless shell scripts) must stay LF, or Git-for-Windows sh breaks on CRLF.
+#
+.githooks/**   text eol=lf
+
+#
 # Shell / scripts
 #
 *.sh           text eol=lf

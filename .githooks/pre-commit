@@ -5,7 +5,10 @@
 #
 set -e
 
-staged=$(git diff --cached --name-only --diff-filter=ACM -- '*.cs')
+# CSharpier 1.x formats C# and XML project/config files; match the same set here
+# so the hook can't miss drift that `dotnet csharpier check .` would later flag in CI.
+staged=$(git diff --cached --name-only --diff-filter=ACM \
+	-- '*.cs' '*.csproj' '*.props' '*.targets' '*.config' '*.slnx')
 [ -z "$staged" ] && exit 0
 
 # Ensure the local tool is available.

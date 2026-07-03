@@ -427,3 +427,6 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
+# Adversarial PR review artifacts (local, not for commit)
+docs/PR_REVIEW_*.md
