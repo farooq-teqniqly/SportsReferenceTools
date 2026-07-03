@@ -5,14 +5,6 @@ info:
 config:
   proxy:
     inherit: true
-    config:
-      protocol: http
-      hostname: ""
-      port: ""
-      auth:
-        username: ""
-        password: ""
-      bypassProxy: ""
 
 request:
   variables:
