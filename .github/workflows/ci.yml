@@ -1,0 +1,98 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# Least privilege: jobs only read the repo. SonarCloud posts via SONAR_TOKEN, not GITHUB_TOKEN.
+permissions:
+  contents: read
+
+# Cancel superseded runs for the same ref (e.g. rapid pushes to a PR).
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  format-check:
+    name: Format Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
+        with:
+          global-json-file: global.json
+
+      - name: Verify formatting
+        run: |
+          dotnet tool restore
+          dotnet csharpier check .
+
+  sonarcloud-analysis:
+    name: Build, Test and SonarCloud Analysis
+    runs-on: ubuntu-latest
+    needs: format-check
+
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      SONAR_PROJECT_KEY: farooq-teqniqly_Teqniqly.SportsReferenceClient
+      SONAR_ORGANIZATION: farooq-teqniqly
+      SONAR_EXCLUSIONS: "**/*.Tests/**,**/*.Benchmarks/**,**/samples/**"
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
+        with:
+          global-json-file: global.json
+
+      - name: Cache SonarCloud packages
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+
+      - name: Install SonarCloud Scanner
+        run: |
+          dotnet tool install --global dotnet-sonarscanner --version 11.0.0
+          dotnet tool install --global dotnet-coverage --version 18.1.0
+          echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Begin SonarCloud analysis
+        run: |
+          dotnet sonarscanner begin \
+            /k:"${{ env.SONAR_PROJECT_KEY }}" \
+            /o:"${{ env.SONAR_ORGANIZATION }}" \
+            /d:sonar.token="${{ env.SONAR_TOKEN }}" \
+            /d:sonar.host.url="https://sonarcloud.io" \
+            /d:sonar.cs.vscoveragexml.reportsPaths=coverage.xml \
+            /d:sonar.security.enableProjectScan=true \
+            /d:sonar.qualitygate.wait=true \
+            /d:sonar.coverage.exclusions="${{ env.SONAR_EXCLUSIONS }}"
+
+      - name: Build solution
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Run tests with coverage
+        run: |
+          dotnet-coverage collect \
+            'dotnet test --configuration Release --no-build --verbosity normal' \
+            -f xml -o coverage.xml
+
+      - name: End SonarCloud analysis
+        run: dotnet sonarscanner end /d:sonar.token="${{ env.SONAR_TOKEN }}"
