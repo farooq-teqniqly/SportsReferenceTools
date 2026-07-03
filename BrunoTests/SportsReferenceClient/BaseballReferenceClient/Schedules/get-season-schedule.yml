@@ -17,12 +17,12 @@ http:
       value: gzip, deflate
     - name: Referer
       value: https://www.baseball-reference.com/leagues/majors/{{year}}-schedule.shtml
-  auth: none
 
 runtime:
-  scripts:
-    - type: before-request
-      code: bru.setVar("year", 1871);
+  assertions:
+    - expression: res.status
+      operator: eq
+      value: "200"
 
 settings:
   encodeUrl: true
