@@ -1,0 +1,12 @@
+# Secrets
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Dependencies
+node_modules
+
+# OS files
+.DS_Store
+Thumbs.db

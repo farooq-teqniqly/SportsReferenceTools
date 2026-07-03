@@ -1,0 +1,31 @@
+info:
+  name: Get season schedule
+  type: http
+  seq: 1
+
+http:
+  method: GET
+  url: https://www.baseball-reference.com/leagues/majors/{{year}}-schedule.shtml
+  headers:
+    - name: User-Agent
+      value: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36
+    - name: Accept
+      value: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8
+    - name: Accept-Language
+      value: en-US,en;q=0.5
+    - name: Accept-Encoding
+      value: gzip, deflate
+    - name: Referer
+      value: https://www.baseball-reference.com/leagues/majors/{{year}}-schedule.shtml
+
+runtime:
+  assertions:
+    - expression: res.status
+      operator: eq
+      value: "200"
+
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
