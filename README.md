@@ -1,5 +1,9 @@
 # Teqniqly.SportsReferenceClient
 
+## Prerequisites
+
+- **.NET 10 SDK** (`10.0.300` or later). All projects target `net10.0`. The SDK is pinned in [`global.json`](global.json) (`rollForward: latestFeature`), so a clean environment fails fast with a clear message if a compatible SDK is missing. Install from <https://dotnet.microsoft.com/download/dotnet/10.0>.
+
 ## Developer setup
 
 ### Git hooks

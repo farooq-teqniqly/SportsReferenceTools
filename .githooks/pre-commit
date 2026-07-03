@@ -7,7 +7,8 @@ set -e
 
 # CSharpier 1.x formats C# and XML project/config files; match the same set here
 # so the hook can't miss drift that `dotnet csharpier check .` would later flag in CI.
-staged=$(git diff --cached --name-only --diff-filter=ACM \
+# ACMR: include Renamed files so a rename (with or without edits) still gets formatted.
+staged=$(git diff --cached --name-only --diff-filter=ACMR \
 	-- '*.cs' '*.csproj' '*.props' '*.targets' '*.config' '*.slnx')
 [ -z "$staged" ] && exit 0
 
