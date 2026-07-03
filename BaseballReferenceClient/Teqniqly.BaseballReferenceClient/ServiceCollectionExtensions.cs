@@ -5,34 +5,37 @@ using Teqniqly.SportsReferenceClient.Common;
 namespace Teqniqly.BaseballReferenceClient
 {
     /// <summary>
-    /// Dependency-injection registration for the Baseball Reference schedule client.
+    /// Dependency-injection registration for the Baseball Reference clients.
     /// </summary>
     public static class ServiceCollectionExtensions
     {
-        private const string BaseAddressKey = "BaseAddresses:BaseballReference:ScheduleClient";
+        private const string ScheduleBaseAddressKey =
+            "BaseAddresses:BaseballReference:ScheduleClient";
 
         /// <summary>
-        /// Registers <see cref="IScheduleClient"/> as a typed <see cref="HttpClient"/>, using the
-        /// base address at configuration key
-        /// <c>BaseAddresses:BaseballReference:ScheduleClient</c>.
+        /// Registers all Baseball Reference clients as typed <see cref="HttpClient"/> instances.
+        /// Currently the schedule client (<see cref="IScheduleClient"/>); further clients (e.g.
+        /// players) are added here as they are introduced.
         /// </summary>
-        /// <param name="services">The service collection to add the client to.</param>
-        /// <param name="configuration">The configuration supplying the client's base address.</param>
+        /// <param name="services">The service collection to add the clients to.</param>
+        /// <param name="configuration">The configuration supplying each client's base address.</param>
         /// <returns>The same <paramref name="services"/> instance, for chaining.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="configuration"/> is null.</exception>
         /// <exception cref="InvalidOperationException">
-        /// The base-address configuration key is missing; thrown when the typed client is first
-        /// resolved, not at registration time.
+        /// A client's base-address configuration key is missing; thrown when that typed client is
+        /// first resolved, not at registration time.
         /// </exception>
-        public static IServiceCollection AddScheduleClient(
+        public static IServiceCollection AddBaseballReferenceClient(
             this IServiceCollection services,
             IConfiguration configuration
         )
         {
-            return services.AddSportsReferenceHttpClient<IScheduleClient, ScheduleClient>(
+            services.AddSportsReferenceHttpClient<IScheduleClient, ScheduleClient>(
                 configuration,
-                BaseAddressKey
+                ScheduleBaseAddressKey
             );
+
+            return services;
         }
     }
 }

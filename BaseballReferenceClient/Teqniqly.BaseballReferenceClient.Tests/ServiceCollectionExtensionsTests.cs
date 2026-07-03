@@ -24,20 +24,20 @@ namespace Teqniqly.BaseballReferenceClient.Tests
         private static ServiceProvider BuildProvider(string? baseAddress)
         {
             return new ServiceCollection()
-                .AddScheduleClient(BuildConfiguration(baseAddress))
+                .AddBaseballReferenceClient(BuildConfiguration(baseAddress))
                 .BuildServiceProvider();
         }
 
         [Fact]
-        public void AddScheduleClient_NullConfiguration_Throws()
+        public void AddBaseballReferenceClient_NullConfiguration_Throws()
         {
             var services = new ServiceCollection();
 
-            Assert.Throws<ArgumentNullException>(() => services.AddScheduleClient(null!));
+            Assert.Throws<ArgumentNullException>(() => services.AddBaseballReferenceClient(null!));
         }
 
         [Fact]
-        public void AddScheduleClient_MissingBaseAddress_ThrowsOnResolve()
+        public void AddBaseballReferenceClient_MissingBaseAddress_ThrowsOnResolve()
         {
             // The configure delegate runs lazily, when the typed client is instantiated -- not
             // at registration time. So the missing-key failure only surfaces on resolve.
@@ -48,7 +48,7 @@ namespace Teqniqly.BaseballReferenceClient.Tests
         }
 
         [Fact]
-        public void AddScheduleClient_ValidConfig_AppliesBaseAddressAndHeaders()
+        public void AddBaseballReferenceClient_ValidConfig_AppliesBaseAddressAndHeaders()
         {
             using var provider = BuildProvider(BaseAddressValue);
             var factory = provider.GetRequiredService<IHttpClientFactory>();
@@ -84,7 +84,7 @@ namespace Teqniqly.BaseballReferenceClient.Tests
         }
 
         [Fact]
-        public void AddScheduleClient_ValidConfig_ResolvesScheduleClient()
+        public void AddBaseballReferenceClient_ValidConfig_ResolvesScheduleClient()
         {
             using var provider = BuildProvider(BaseAddressValue);
 
