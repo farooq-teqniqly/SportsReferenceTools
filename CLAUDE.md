@@ -54,8 +54,9 @@ run `git config core.hooksPath .githooks` manually.
 
 `.github/workflows/ci.yml` runs on push/PR to `main` and manual dispatch:
 
-- `format-check` — `dotnet csharpier check .` (fast gate).
-- `sonarcloud-analysis` — build + test with coverage + SonarCloud analysis (quality-gate wait).
+- **Format Check** (job id `format-check`) — `dotnet csharpier check .` (fast gate).
+- **Build, Test and SonarCloud Analysis** (job id `sonarcloud-analysis`) — build + test with
+  coverage + SonarCloud analysis (quality-gate wait).
 
 `main` is protected: both checks are **required** and the branch must be up to date before
 merge. If you rename a job's `name:`, update the required-check contexts in branch protection
