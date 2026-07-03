@@ -38,8 +38,54 @@ A .NET class library that wraps sports-reference data sources. The first client 
   `!` are optional and a scope must match `[a-z0-9._-]+`), enforced by the `commit-msg` hook.
   Types: `feat fix docs style refactor perf test build ci chore revert`.
 - **U.S. English** spelling in code, comments, and docs.
+- **Default accessibility:** classes are `internal sealed` unless a `public` surface is
+  genuinely required (e.g. a library entry point, or a type a framework must discover such as
+  xUnit test classes). Abstract/base classes stay `internal` (they can't be `sealed`).
+  **Interfaces are `public` by default.** When a type must be `internal` but a trusted assembly
+  needs it (test project, Castle/NSubstitute proxy `DynamicProxyGenAssembly2`), grant access via
+  `<InternalsVisibleTo>` rather than widening the type to `public`.
+- **TDD for production code:** follow red-green-refactor. Write a failing test first and run it
+  to confirm it fails for the right reason (**red**); write the minimum production code to make
+  it pass (**green**); then clean up with the tests still passing (**refactor**). Do not add or
+  change production behavior without a test that first failed. (Non-behavioral edits -- docs,
+  formatting, accessibility/signature tweaks like adding a `= default` -- do not need a new test.)
+- **`CancellationToken` parameters** take a default (`CancellationToken cancellationToken = default`)
+  and are the last parameter, so callers may omit them.
+- **XML documentation** is required on every `public` and `internal` type and member in library
+  (non-test) projects: at minimum a `<summary>`, plus `<param>`, `<returns>`, and `<exception>`
+  where they add information. Use `<inheritdoc />` on interface implementations instead of
+  copying text. Library projects set `<GenerateDocumentationFile>true</GenerateDocumentationFile>`,
+  so missing docs on `public` members fail the build (`CS1591` under `TreatWarningsAsErrors`);
+  `internal` members are covered by convention, not the compiler. Test projects are exempt —
+  test names document intent.
+- **No superfluous comments.** Do not add comments that restate what the code already says
+  (types, names, obvious control flow). Comment only the non-obvious: *why* a choice was made,
+  a workaround, an analyzer/framework quirk, or a subtle invariant. When in doubt, leave it out.
 - **Line endings:** LF everywhere except `.sln/.slnx/.ps1/.bat/.cmd` (CRLF). Governed by
   `.gitattributes` and mirrored in `.editorconfig`; keep the two aligned.
+
+## Testing
+
+xUnit v3 + NSubstitute. `Directory.Build.props` sets `TreatWarningsAsErrors=true` but
+`CodeAnalysisTreatWarningsAsErrors=false`, so `CA*` analyzer findings are warnings (they do not
+fail the build) while plain compiler warnings do. Keep tests warning-clean anyway. Recurring
+analyzer gotchas:
+
+- **CA2000 (dispose `IDisposable` before it goes out of scope).** Any `HttpClient`,
+  `HttpResponseMessage`, `HttpContent`, etc. created in a test must be owned and disposed —
+  do not `new` one and drop it. Pattern in `ScheduleClientTests`: the test class implements
+  `IDisposable`, factory/helper methods add each created disposable to a `List<IDisposable>`
+  field, and `Dispose()` disposes them all (xUnit makes a fresh test-class instance per test).
+  Disposing an `HttpClient` also disposes the `HttpMessageHandler` it was constructed with.
+- **CA2007 (`ConfigureAwait`)** is disabled for `*Tests.cs` in `.editorconfig` — do **not** add
+  `ConfigureAwait` in tests. xUnit's `xUnit1030` forbids `ConfigureAwait(false)` in test
+  methods, and `ConfigureAwait(true)` trips SonarAnalyzer `S125` (reads as commented-out code).
+- **Faking `HttpClient`:** `HttpMessageHandler.SendAsync` is `protected`, so NSubstitute can't
+  intercept it. Use the `TestHttpMessageHandler` wrapper (public abstract `MockSendAsync` +
+  `sealed` protected `SendAsync` override that delegates to it) so only `MockSendAsync` is
+  substituted.
+- **Internal types under test** (e.g. `ScheduleClient`) are reached via `<InternalsVisibleTo>`
+  in the library `.csproj`, not by widening their accessibility.
 
 ## Git hooks
 

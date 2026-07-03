@@ -82,3 +82,7 @@ dotnet_style_object_initializer = true:suggestion
 [*Tests.cs]
 # CA1707: Identifiers should not contain underscores
 dotnet_diagnostic.CA1707.severity = none
+
+# CA2007: Do not directly await a Task -- ConfigureAwait(false) is disallowed in xUnit tests
+# (xUnit1030), so the SynchronizationContext guidance does not apply here.
+dotnet_diagnostic.CA2007.severity = none
