@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
         <IsPackable>false</IsPackable>
     </PropertyGroup>
@@ -8,9 +8,14 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\Teqniqly.BaseballReferenceClient\Teqniqly.BaseballReferenceClient.csproj" />
-        <!-- Reuse the shared TestHttpMessageHandler test double. -->
-        <ProjectReference Include="..\..\Common\Teqniqly.SportsReferenceClient.Common.Tests\Teqniqly.SportsReferenceClient.Common.Tests.csproj" />
+        <ProjectReference Include="..\Teqniqly.SportsReferenceClient.Common\Teqniqly.SportsReferenceClient.Common.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <!-- Let Castle/NSubstitute proxy the internal TestHttpMessageHandler, and let the
+             BaseballReferenceClient tests reuse it. -->
+        <InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
+        <InternalsVisibleTo Include="Teqniqly.BaseballReferenceClient.Tests" />
     </ItemGroup>
 
     <ItemGroup>

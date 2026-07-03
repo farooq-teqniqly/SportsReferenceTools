@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text;
 using NSubstitute;
+using Teqniqly.SportsReferenceClient.Common.Tests;
 
 namespace Teqniqly.BaseballReferenceClient.Tests
 {

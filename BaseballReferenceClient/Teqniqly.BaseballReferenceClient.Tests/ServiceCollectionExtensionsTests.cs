@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Teqniqly.SportsReferenceClient.Common;
 
 namespace Teqniqly.BaseballReferenceClient.Tests
 {

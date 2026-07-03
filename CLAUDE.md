@@ -80,6 +80,13 @@ analyzer gotchas:
 - **CA2007 (`ConfigureAwait`)** is disabled for `*Tests.cs` in `.editorconfig` — do **not** add
   `ConfigureAwait` in tests. xUnit's `xUnit1030` forbids `ConfigureAwait(false)` in test
   methods, and `ConfigureAwait(true)` trips SonarAnalyzer `S125` (reads as commented-out code).
+- **xUnit1051 (`CancellationToken`)** fires when a token-accepting call *omits* the token and
+  relies on the default; passing `CancellationToken.None` explicitly satisfies it. Do that in
+  tests rather than omitting the argument.
+- **Shared test double:** `TestHttpMessageHandler` lives in `Teqniqly.SportsReferenceClient.Common.Tests`
+  (internal, exposed to `DynamicProxyGenAssembly2` and to `Teqniqly.BaseballReferenceClient.Tests`
+  via `InternalsVisibleTo`). Other test projects reuse it through a project reference — do not
+  duplicate it.
 - **Faking `HttpClient`:** `HttpMessageHandler.SendAsync` is `protected`, so NSubstitute can't
   intercept it. Use the `TestHttpMessageHandler` wrapper (public abstract `MockSendAsync` +
   `sealed` protected `SendAsync` override that delegates to it) so only `MockSendAsync` is

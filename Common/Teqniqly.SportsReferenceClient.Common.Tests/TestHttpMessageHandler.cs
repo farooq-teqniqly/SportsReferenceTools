@@ -1,4 +1,4 @@
-namespace Teqniqly.BaseballReferenceClient.Tests
+namespace Teqniqly.SportsReferenceClient.Common.Tests
 {
     // HttpMessageHandler.SendAsync is protected, so NSubstitute cannot intercept it directly.
     // This abstract wrapper exposes a substitutable method the protected override delegates to.

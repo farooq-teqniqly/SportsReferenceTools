@@ -1,3 +1,5 @@
+using Teqniqly.SportsReferenceClient.Common;
+
 namespace Teqniqly.BaseballReferenceClient
 {
     /// <summary>
@@ -31,21 +33,12 @@ namespace Teqniqly.BaseballReferenceClient
             ArgumentOutOfRangeException.ThrowIfLessThan(year, FirstSeason);
             ArgumentOutOfRangeException.ThrowIfGreaterThan(year, DateTime.UtcNow.Year);
 
-            using var request = new HttpRequestMessage(HttpMethod.Get, $"{year}-schedule.shtml");
-
-            // Not disposed here: the returned stream is backed by the response content, so the
-            // response must outlive this method. The caller owns the returned stream.
-            var response = await _httpClient
-                .SendAsync(request, HttpCompletionOption.ResponseContentRead, cancellationToken)
+            return await _httpClient
+                .GetPageAsync(
+                    new Uri($"{year}-schedule.shtml", UriKind.Relative),
+                    cancellationToken
+                )
                 .ConfigureAwait(false);
-
-            response.EnsureSuccessStatusCode();
-
-            var stream = await response
-                .Content.ReadAsStreamAsync(cancellationToken)
-                .ConfigureAwait(false);
-
-            return stream;
         }
     }
 }

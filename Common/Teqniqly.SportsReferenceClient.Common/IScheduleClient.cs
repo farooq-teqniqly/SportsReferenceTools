@@ -1,4 +1,4 @@
-namespace Teqniqly.BaseballReferenceClient
+namespace Teqniqly.SportsReferenceClient.Common
 {
     /// <summary>
     /// Retrieves season schedule data from Baseball Reference.
