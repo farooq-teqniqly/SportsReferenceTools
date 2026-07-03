@@ -1,0 +1,12 @@
+<Solution>
+    <Folder Name="/BaseballReferenceClient/">
+        <Project
+            Path="BaseballReferenceClient/Teqniqly.BaseballReferenceClient.Tests/Teqniqly.BaseballReferenceClient.Tests.csproj"
+            Id="b1a678a9-843e-482b-8377-3ffdd0e4b38b"
+        />
+        <Project
+            Path="BaseballReferenceClient/Teqniqly.BaseballReferenceClient/Teqniqly.BaseballReferenceClient.csproj"
+            Id="70295d42-adda-482d-b2d1-25b1d84e739a"
+        />
+    </Folder>
+</Solution>
