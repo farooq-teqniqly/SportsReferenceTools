@@ -30,7 +30,10 @@ namespace Teqniqly.SportsReferenceClient.Common.Tests
         private static ServiceProvider BuildProvider(string? baseAddress)
         {
             return new ServiceCollection()
-                .AddSportsReferenceHttpClient<ITestClient, TestClient>(Configuration(baseAddress))
+                .AddSportsReferenceHttpClient<ITestClient, TestClient>(
+                    Configuration(baseAddress),
+                    BaseAddressKey
+                )
                 .BuildServiceProvider();
         }
 
@@ -40,7 +43,10 @@ namespace Teqniqly.SportsReferenceClient.Common.Tests
             var services = new ServiceCollection();
 
             Assert.Throws<ArgumentNullException>(() =>
-                services.AddSportsReferenceHttpClient<ITestClient, TestClient>(null!)
+                services.AddSportsReferenceHttpClient<ITestClient, TestClient>(
+                    null!,
+                    BaseAddressKey
+                )
             );
         }
 

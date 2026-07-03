@@ -9,6 +9,8 @@ namespace Teqniqly.BaseballReferenceClient
     /// </summary>
     public static class ServiceCollectionExtensions
     {
+        private const string BaseAddressKey = "BaseAddresses:BaseballReference:ScheduleClient";
+
         /// <summary>
         /// Registers <see cref="IScheduleClient"/> as a typed <see cref="HttpClient"/>, using the
         /// base address at configuration key
@@ -28,7 +30,8 @@ namespace Teqniqly.BaseballReferenceClient
         )
         {
             return services.AddSportsReferenceHttpClient<IScheduleClient, ScheduleClient>(
-                configuration
+                configuration,
+                BaseAddressKey
             );
         }
     }

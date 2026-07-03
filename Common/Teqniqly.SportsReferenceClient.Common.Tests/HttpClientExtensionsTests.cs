@@ -12,12 +12,15 @@ namespace Teqniqly.SportsReferenceClient.Common.Tests
 
         private readonly List<IDisposable> _disposables = [];
 
-        private static IConfiguration Configuration(string? baseAddress)
+        private static IConfiguration Configuration(
+            string? baseAddress,
+            string key = BaseAddressKey
+        )
         {
             var values = new Dictionary<string, string?>();
             if (baseAddress is not null)
             {
-                values[BaseAddressKey] = baseAddress;
+                values[key] = baseAddress;
             }
 
             return new ConfigurationBuilder().AddInMemoryCollection(values).Build();
@@ -53,7 +56,11 @@ namespace Teqniqly.SportsReferenceClient.Common.Tests
         public void Configure_NullClient_Throws()
         {
             Assert.Throws<ArgumentNullException>(() =>
-                HttpClientExtensions.Configure(null!, Configuration(BaseAddressValue))
+                HttpClientExtensions.Configure(
+                    null!,
+                    Configuration(BaseAddressValue),
+                    BaseAddressKey
+                )
             );
         }
 
@@ -62,7 +69,7 @@ namespace Teqniqly.SportsReferenceClient.Common.Tests
         {
             var (client, _) = CreateClient();
 
-            Assert.Throws<ArgumentNullException>(() => client.Configure(null!));
+            Assert.Throws<ArgumentNullException>(() => client.Configure(null!, BaseAddressKey));
         }
 
         [Fact]
@@ -70,7 +77,9 @@ namespace Teqniqly.SportsReferenceClient.Common.Tests
         {
             var (client, _) = CreateClient();
 
-            Assert.Throws<InvalidOperationException>(() => client.Configure(Configuration(null)));
+            Assert.Throws<InvalidOperationException>(() =>
+                client.Configure(Configuration(null), BaseAddressKey)
+            );
         }
 
         [Fact]
@@ -78,7 +87,7 @@ namespace Teqniqly.SportsReferenceClient.Common.Tests
         {
             var (client, _) = CreateClient();
 
-            client.Configure(Configuration(BaseAddressValue));
+            client.Configure(Configuration(BaseAddressValue), BaseAddressKey);
 
             Assert.Equal(new Uri(BaseAddressValue), client.BaseAddress);
 
@@ -111,7 +120,31 @@ namespace Teqniqly.SportsReferenceClient.Common.Tests
         {
             var (client, _) = CreateClient();
 
-            Assert.Same(client, client.Configure(Configuration(BaseAddressValue)));
+            Assert.Same(client, client.Configure(Configuration(BaseAddressValue), BaseAddressKey));
+        }
+
+        [Fact]
+        public void Configure_UsesProvidedKey()
+        {
+            const string customKey = "BaseAddresses:Custom:ScheduleClient";
+            var (client, _) = CreateClient();
+
+            client.Configure(Configuration(BaseAddressValue, customKey), customKey);
+
+            Assert.Equal(new Uri(BaseAddressValue), client.BaseAddress);
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData("  ")]
+        public void Configure_NullOrWhitespaceKey_Throws(string? key)
+        {
+            var (client, _) = CreateClient();
+
+            Assert.ThrowsAny<ArgumentException>(() =>
+                client.Configure(Configuration(BaseAddressValue), key!)
+            );
         }
 
         [Fact]

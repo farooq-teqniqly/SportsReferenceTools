@@ -8,26 +8,35 @@ namespace Teqniqly.SportsReferenceClient.Common
     public static class HttpClientExtensions
     {
         /// <summary>
-        /// Sets the client's base address from configuration key
-        /// <c>BaseAddresses:BaseballReference:ScheduleClient</c> and adds the default
-        /// browser-like request headers (Accept, Accept-Language, Accept-Encoding, User-Agent).
+        /// Sets the client's base address from the configuration value at
+        /// <paramref name="baseAddressKey"/> and adds the default browser-like request headers
+        /// (Accept, Accept-Language, Accept-Encoding, User-Agent).
         /// </summary>
         /// <param name="client">The client to configure.</param>
         /// <param name="configuration">The configuration supplying the base address.</param>
+        /// <param name="baseAddressKey">The configuration key holding the base address.</param>
         /// <returns>The same <paramref name="client"/> instance, for chaining.</returns>
         /// <exception cref="ArgumentNullException">
         /// <paramref name="client"/> or <paramref name="configuration"/> is null.
         /// </exception>
-        /// <exception cref="InvalidOperationException">The base-address configuration key is missing.</exception>
-        public static HttpClient Configure(this HttpClient client, IConfiguration configuration)
+        /// <exception cref="ArgumentException"><paramref name="baseAddressKey"/> is null or whitespace.</exception>
+        /// <exception cref="InvalidOperationException">
+        /// No configuration value exists at <paramref name="baseAddressKey"/>.
+        /// </exception>
+        public static HttpClient Configure(
+            this HttpClient client,
+            IConfiguration configuration,
+            string baseAddressKey
+        )
         {
             ArgumentNullException.ThrowIfNull(client);
             ArgumentNullException.ThrowIfNull(configuration);
+            ArgumentException.ThrowIfNullOrWhiteSpace(baseAddressKey);
 
             client.BaseAddress = new Uri(
-                configuration["BaseAddresses:BaseballReference:ScheduleClient"]
+                configuration[baseAddressKey]
                     ?? throw new InvalidOperationException(
-                        "BaseAddresses:BaseballReference:ScheduleClient configuration is missing."
+                        $"Configuration key '{baseAddressKey}' is missing."
                     )
             );
 

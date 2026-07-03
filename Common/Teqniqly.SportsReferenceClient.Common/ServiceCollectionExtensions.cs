@@ -16,24 +16,28 @@ namespace Teqniqly.SportsReferenceClient.Common
         /// <typeparam name="TImplementation">The concrete implementation of <typeparamref name="TClient"/>.</typeparam>
         /// <param name="services">The service collection to add the client to.</param>
         /// <param name="configuration">The configuration supplying the client's base address.</param>
+        /// <param name="baseAddressKey">The configuration key holding the base address.</param>
         /// <returns>The same <paramref name="services"/> instance, for chaining.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="configuration"/> is null.</exception>
+        /// <exception cref="ArgumentException"><paramref name="baseAddressKey"/> is null or whitespace.</exception>
         /// <exception cref="InvalidOperationException">
-        /// The base-address configuration key is missing; thrown when the typed client is first
-        /// resolved, not at registration time.
+        /// No configuration value exists at <paramref name="baseAddressKey"/>; thrown when the
+        /// typed client is first resolved, not at registration time.
         /// </exception>
         public static IServiceCollection AddSportsReferenceHttpClient<TClient, TImplementation>(
             this IServiceCollection services,
-            IConfiguration configuration
+            IConfiguration configuration,
+            string baseAddressKey
         )
             where TClient : class
             where TImplementation : class, TClient
         {
             ArgumentNullException.ThrowIfNull(configuration);
+            ArgumentException.ThrowIfNullOrWhiteSpace(baseAddressKey);
 
             services.AddHttpClient<TClient, TImplementation>(client =>
             {
-                client.Configure(configuration);
+                client.Configure(configuration, baseAddressKey);
             });
 
             return services;
