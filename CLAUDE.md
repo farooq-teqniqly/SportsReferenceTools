@@ -34,8 +34,9 @@ A .NET class library that wraps sports-reference data sources. The first client 
 
 - **Formatting is owned by CSharpier** (`dotnet-tools.json`, v1.x — use the `format`/`check`
   subcommands). Do not hand-format; run CSharpier. The pre-commit hook enforces it.
-- **Commit messages: Conventional Commits** (`<type>(<scope>)!: <desc>`), enforced by the
-  `commit-msg` hook. Types: `feat fix docs style refactor perf test build ci chore revert`.
+- **Commit messages: Conventional Commits** (`<type>(<scope>)!: <desc>`, where scope and `!`
+  are optional), enforced by the `commit-msg` hook. Types:
+  `feat fix docs style refactor perf test build ci chore revert`.
 - **U.S. English** spelling in code, comments, and docs.
 - **Line endings:** LF everywhere except `.sln/.slnx/.ps1/.bat/.cmd` (CRLF). Governed by
   `.gitattributes` and mirrored in `.editorconfig`; keep the two aligned.
@@ -43,8 +44,8 @@ A .NET class library that wraps sports-reference data sources. The first client 
 ## Git hooks
 
 Hooks live in `.githooks/` and are activated by `core.hooksPath`. The `ConfigureGitHooks`
-target in `Directory.Build.props` sets this on the first `dotnet build`; a fresh clone can also
-run `git config core.hooksPath .githooks` manually.
+target in `Directory.Build.props` sets this idempotently on every `dotnet build`; a fresh clone
+can also run `git config core.hooksPath .githooks` manually.
 
 - `pre-commit` — runs CSharpier on staged `.cs/.csproj/.props/.targets/.config/.slnx` files
   (including renames) and re-stages them.
