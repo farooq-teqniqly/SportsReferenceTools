@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.DependencyInjection;
 using Spectre.Console.Cli;
 
@@ -7,6 +8,7 @@ namespace Teqniqly.SportsReferenceClient.Cli
     /// Bridges Spectre.Console.Cli's <see cref="ITypeRegistrar"/> to a
     /// <see cref="IServiceCollection"/> so commands are constructed by Microsoft DI.
     /// </summary>
+    [ExcludeFromCodeCoverage]
     internal sealed class TypeRegistrar : ITypeRegistrar
     {
         private readonly IServiceCollection _services;

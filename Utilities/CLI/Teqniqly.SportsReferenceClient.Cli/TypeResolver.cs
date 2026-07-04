@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Spectre.Console.Cli;
 
 namespace Teqniqly.SportsReferenceClient.Cli
@@ -6,6 +7,7 @@ namespace Teqniqly.SportsReferenceClient.Cli
     /// Resolves command and dependency instances from the built
     /// <see cref="IServiceProvider"/> for Spectre.Console.Cli.
     /// </summary>
+    [ExcludeFromCodeCoverage]
     internal sealed class TypeResolver : ITypeResolver, IDisposable
     {
         private readonly IServiceProvider _provider;

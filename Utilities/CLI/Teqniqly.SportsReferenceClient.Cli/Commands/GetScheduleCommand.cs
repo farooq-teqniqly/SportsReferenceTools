@@ -182,10 +182,17 @@ namespace Teqniqly.SportsReferenceClient.Cli.Commands
             {
                 File.Delete(path);
             }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            catch (Exception ex)
+                when (ex
+                        is IOException
+                            or UnauthorizedAccessException
+                            or ArgumentException
+                            or NotSupportedException
+                )
             {
-                // Best-effort cleanup; a leftover temp file is preferable to masking the
-                // original failure with a delete error.
+                // Best-effort cleanup running in a finally: swallow every failure the callers'
+                // catch filter handles, so a delete error can never escape and mask the original
+                // exception (a leftover temp file is the lesser evil).
             }
         }
     }
