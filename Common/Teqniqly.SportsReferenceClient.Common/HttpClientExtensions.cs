@@ -97,22 +97,22 @@ namespace Teqniqly.SportsReferenceClient.Common
 
             // Remove-then-add so calling Configure more than once on the same client is idempotent
             // rather than duplicating header values.
-            headers.Remove("Accept");
+            headers.Remove(HttpHeaderNames.Accept);
 
             headers.Add(
-                "Accept",
+                HttpHeaderNames.Accept,
                 "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"
             );
 
-            headers.Remove("Accept-Language");
-            headers.Add("Accept-Language", "en-US,en;q=0.5");
+            headers.Remove(HttpHeaderNames.AcceptLanguage);
+            headers.Add(HttpHeaderNames.AcceptLanguage, "en-US,en;q=0.5");
 
             // Accept-Encoding is negotiated by the primary handler's AutomaticDecompression so the
             // response is transparently decompressed; adding it here would fight that.
-            headers.Remove("User-Agent");
+            headers.Remove(HttpHeaderNames.UserAgent);
 
             headers.Add(
-                "User-Agent",
+                HttpHeaderNames.UserAgent,
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
             );
         }
