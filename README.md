@@ -4,6 +4,10 @@
 
 - **.NET 10 SDK** (`10.0.300` or later). All projects target `net10.0`. The SDK is pinned in [`global.json`](global.json) (`rollForward: latestFeature`), so a clean environment fails fast with a clear message if a compatible SDK is missing. Install from <https://dotnet.microsoft.com/download/dotnet/10.0>.
 
+## Command-line interface
+
+`sportsref` is a [Spectre.Console](https://spectreconsole.net) console app for downloading sports-reference data from the terminal (e.g. `sportsref baseball schedule get --year 2026 --file schedule.shtml`). See [`Utilities/CLI/Teqniqly.SportsReferenceClient.Cli/README.md`](Utilities/CLI/Teqniqly.SportsReferenceClient.Cli/README.md) for usage.
+
 ## Developer setup
 
 ### Git hooks
