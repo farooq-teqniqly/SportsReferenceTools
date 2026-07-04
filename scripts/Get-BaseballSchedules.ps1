@@ -47,8 +47,9 @@ else {
 $OutputDirectory = (Resolve-Path -LiteralPath $OutputDirectory).Path
 
 # Build once up front so the per-year loop can use --no-build and skip repeated restore/build work.
-& dotnet build $cliProject -c Release | Out-Null
+$buildOutput = & dotnet build $cliProject -c Release 2>&1
 if ($LASTEXITCODE -ne 0) {
+    $buildOutput | Write-Host
     throw "Failed to build CLI project ($cliProject). Exit code $LASTEXITCODE."
 }
 
