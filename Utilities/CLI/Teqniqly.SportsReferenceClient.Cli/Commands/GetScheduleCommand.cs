@@ -37,7 +37,7 @@ namespace Teqniqly.SportsReferenceClient.Cli.Commands
             /// <summary>Gets the season year to download.</summary>
             [CommandOption("--year")]
             [Description("Season year (1871..current UTC year).")]
-            public required int Year { get; init; }
+            public int? Year { get; init; }
 
             /// <summary>Gets the output path for the raw <c>.shtml</c> file.</summary>
             [CommandOption("--file")]
@@ -50,6 +50,11 @@ namespace Teqniqly.SportsReferenceClient.Cli.Commands
                 if (string.IsNullOrWhiteSpace(File))
                 {
                     return ValidationResult.Error("--file is required.");
+                }
+
+                if (Year is null)
+                {
+                    return ValidationResult.Error("--year is required.");
                 }
 
                 var currentYear = DateTime.UtcNow.Year;
@@ -82,13 +87,16 @@ namespace Teqniqly.SportsReferenceClient.Cli.Commands
         /// <param name="settings">The validated command options.</param>
         /// <param name="cancellationToken">A token to cancel the download.</param>
         /// <returns>The process exit code: 0 on success, non-zero on failure or cancellation.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="settings"/> is null.</exception>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="settings"/> is null, or its <see cref="Settings.Year"/> is null.
+        /// </exception>
         internal async Task<int> DownloadAsync(
             Settings settings,
             CancellationToken cancellationToken = default
         )
         {
             ArgumentNullException.ThrowIfNull(settings);
+            ArgumentNullException.ThrowIfNull(settings.Year);
 
             // Write to a temp file in the target directory and atomically move it into place on
             // success, so a mid-copy failure or cancellation never leaves a partial file behind.
@@ -99,7 +107,7 @@ namespace Teqniqly.SportsReferenceClient.Cli.Commands
                 var stopwatch = Stopwatch.StartNew();
 
                 await using var stream = await _scheduleClient.GetScheduleAsync(
-                    settings.Year,
+                    settings.Year.Value,
                     cancellationToken
                 );
 

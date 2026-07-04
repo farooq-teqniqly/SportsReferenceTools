@@ -169,6 +169,17 @@ namespace Teqniqly.SportsReferenceClient.Cli.Tests
             Assert.False(settings.Validate().Successful);
         }
 
+        [Fact]
+        public void Validate_MissingYear_FailsWithRequiredMessage()
+        {
+            var settings = new GetScheduleCommand.Settings { File = "schedule.shtml" };
+
+            var result = settings.Validate();
+
+            Assert.False(result.Successful);
+            Assert.Equal("--year is required.", result.Message);
+        }
+
         [Theory]
         [InlineData(1870)]
         [InlineData(9999)]
