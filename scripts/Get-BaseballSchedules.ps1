@@ -8,6 +8,7 @@ param(
     [int]$EndYear,
 
     [Parameter(Mandatory = $true)]
+    [ValidateNotNullOrEmpty()]
     [string]$OutputDirectory,
 
     [ValidateRange(0, 86400)]
@@ -44,6 +45,12 @@ else {
 }
 $OutputDirectory = (Resolve-Path -LiteralPath $OutputDirectory).Path
 
+# Build once up front so the per-year loop can use --no-build and skip repeated restore/build work.
+& dotnet build $cliProject -c Release | Out-Null
+if ($LASTEXITCODE -ne 0) {
+    throw "Failed to build CLI project ($cliProject). Exit code $LASTEXITCODE."
+}
+
 $failedYears = @()
 
 for ($year = $StartYear; $year -le $EndYear; $year++) {
@@ -57,7 +64,7 @@ for ($year = $StartYear; $year -le $EndYear; $year++) {
 
     Write-Host "Downloading $year schedule -> $filePath"
 
-    & dotnet run --project $cliProject -- baseball schedule get --year $year --file $filePath
+    & dotnet run --no-build -c Release --project $cliProject -- baseball schedule get --year $year --file $filePath
     if ($LASTEXITCODE -ne 0) {
         Write-Warning "CLI exited with code $LASTEXITCODE for year $year."
         $failedYears += $year
