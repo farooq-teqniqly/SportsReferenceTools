@@ -50,7 +50,7 @@ for ($year = $StartYear; $year -le $EndYear; $year++) {
     $fileName = "baseball-schedule-$year.shtml"
     $filePath = Join-Path $OutputDirectory $fileName
 
-    if (Test-Path -LiteralPath $filePath) {
+    if (Test-Path -LiteralPath $filePath -PathType Leaf) {
         Write-Host "Skipping $year, file already exists: $filePath"
         continue
     }
