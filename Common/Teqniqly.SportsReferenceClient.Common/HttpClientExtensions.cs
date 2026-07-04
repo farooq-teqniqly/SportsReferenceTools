@@ -22,8 +22,8 @@ namespace Teqniqly.SportsReferenceClient.Common
         /// </exception>
         /// <exception cref="ArgumentException"><paramref name="baseAddressKey"/> is null or whitespace.</exception>
         /// <exception cref="InvalidOperationException">
-        /// No configuration value exists at <paramref name="baseAddressKey"/>, or that value is
-        /// not a valid absolute URI.
+        /// The configuration value at <paramref name="baseAddressKey"/> is missing, empty, or not
+        /// a valid absolute URI.
         /// </exception>
         public static HttpClient Configure(
             this HttpClient client,
@@ -35,11 +35,14 @@ namespace Teqniqly.SportsReferenceClient.Common
             ArgumentNullException.ThrowIfNull(configuration);
             ArgumentException.ThrowIfNullOrWhiteSpace(baseAddressKey);
 
-            var baseAddress =
-                configuration[baseAddressKey]
-                ?? throw new InvalidOperationException(
-                    $"Configuration key '{baseAddressKey}' is missing."
+            var baseAddress = configuration[baseAddressKey];
+
+            if (string.IsNullOrWhiteSpace(baseAddress))
+            {
+                throw new InvalidOperationException(
+                    $"Configuration key '{baseAddressKey}' is missing or empty."
                 );
+            }
 
             // A trailing slash is required so a relative request URI resolves under the base path
             // rather than replacing its last segment.

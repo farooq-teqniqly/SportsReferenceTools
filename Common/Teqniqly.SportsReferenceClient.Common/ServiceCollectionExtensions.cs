@@ -24,8 +24,9 @@ namespace Teqniqly.SportsReferenceClient.Common
         /// </exception>
         /// <exception cref="ArgumentException"><paramref name="baseAddressKey"/> is null or whitespace.</exception>
         /// <exception cref="InvalidOperationException">
-        /// No configuration value exists at <paramref name="baseAddressKey"/>; thrown when the
-        /// typed client is first resolved, not at registration time.
+        /// The configuration value at <paramref name="baseAddressKey"/> is missing, empty, or not
+        /// a valid absolute URI; thrown when the typed client is first resolved, not at
+        /// registration time.
         /// </exception>
         public static IServiceCollection AddSportsReferenceHttpClient<TClient, TImplementation>(
             this IServiceCollection services,

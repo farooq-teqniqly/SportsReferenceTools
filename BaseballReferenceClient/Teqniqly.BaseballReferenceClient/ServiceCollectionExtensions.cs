@@ -24,8 +24,8 @@ namespace Teqniqly.BaseballReferenceClient
         /// <paramref name="services"/> or <paramref name="configuration"/> is null.
         /// </exception>
         /// <exception cref="InvalidOperationException">
-        /// A client's base-address configuration key is missing or holds an invalid URI; thrown
-        /// when that typed client is first resolved, not at registration time.
+        /// A client's base-address configuration value is missing, empty, or not a valid absolute
+        /// URI; thrown when that typed client is first resolved, not at registration time.
         /// </exception>
         public static IServiceCollection AddBaseballReferenceClient(
             this IServiceCollection services,

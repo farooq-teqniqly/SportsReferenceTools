@@ -161,6 +161,20 @@ namespace Teqniqly.SportsReferenceClient.Common.Tests
             );
         }
 
+        [Theory]
+        [InlineData("")]
+        [InlineData("   ")]
+        public void Configure_EmptyBaseAddress_ThrowsMissing(string value)
+        {
+            var (client, _) = CreateClient();
+
+            var ex = Assert.Throws<InvalidOperationException>(() =>
+                client.Configure(Configuration(value), BaseAddressKey)
+            );
+
+            Assert.Contains("missing", ex.Message, StringComparison.OrdinalIgnoreCase);
+        }
+
         [Fact]
         public void Configure_UsesProvidedKey()
         {
