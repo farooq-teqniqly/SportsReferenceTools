@@ -10,8 +10,10 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$OutputDirectory,
 
+    [ValidateRange(0, 86400)]
     [int]$MinDelaySeconds = 5,
 
+    [ValidateRange(0, 86400)]
     [int]$MaxDelaySeconds = 10
 )
 
@@ -26,14 +28,21 @@ if ($MaxDelaySeconds -lt $MinDelaySeconds) {
 }
 
 # Resolve the CLI project relative to this script so the script works from any CWD.
-$scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
-$cliProject = Join-Path $scriptRoot '..\Utilities\CLI\Teqniqly.SportsReferenceClient.Cli\Teqniqly.SportsReferenceClient.Cli.csproj'
-$cliProject = (Resolve-Path $cliProject).Path
+$cliProject = Join-Path $PSScriptRoot '..\Utilities\CLI\Teqniqly.SportsReferenceClient.Cli\Teqniqly.SportsReferenceClient.Cli.csproj'
+$cliProject = (Resolve-Path -LiteralPath $cliProject).Path
 
-if (-not (Test-Path $OutputDirectory)) {
-    New-Item -ItemType Directory -Path $OutputDirectory -Force | Out-Null
+# Accept an existing directory or create one. Reject an existing non-directory path so we never
+# build child file paths under a file. -LiteralPath keeps wildcard metacharacters (e.g. '[', ']')
+# in the supplied path from being treated as patterns.
+if (Test-Path -LiteralPath $OutputDirectory) {
+    if (-not (Test-Path -LiteralPath $OutputDirectory -PathType Container)) {
+        throw "OutputDirectory ($OutputDirectory) exists but is not a directory."
+    }
 }
-$OutputDirectory = (Resolve-Path $OutputDirectory).Path
+else {
+    New-Item -ItemType Directory -LiteralPath $OutputDirectory -Force | Out-Null
+}
+$OutputDirectory = (Resolve-Path -LiteralPath $OutputDirectory).Path
 
 $failedYears = @()
 
@@ -41,7 +50,7 @@ for ($year = $StartYear; $year -le $EndYear; $year++) {
     $fileName = "baseball-schedule-$year.shtml"
     $filePath = Join-Path $OutputDirectory $fileName
 
-    if (Test-Path $filePath) {
+    if (Test-Path -LiteralPath $filePath) {
         Write-Host "Skipping $year, file already exists: $filePath"
         continue
     }
