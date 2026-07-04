@@ -93,7 +93,7 @@ for ($year = $StartYear; $year -le $EndYear; $year++) {
 if ($failedYears.Count -gt 0) {
     Write-Host ""
     Write-Warning "Failed years: $($failedYears -join ', ')"
-    exit 1
+    throw "One or more years failed."
 }
 
 Write-Host "Done."
