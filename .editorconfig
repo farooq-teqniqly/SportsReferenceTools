@@ -88,3 +88,8 @@ dotnet_diagnostic.CA1707.severity = none
 # CA2007: Do not directly await a Task -- ConfigureAwait(false) is disallowed in xUnit tests
 # (xUnit1030), so the SynchronizationContext guidance does not apply here.
 dotnet_diagnostic.CA2007.severity = none
+
+# CA2000/CA2215: test doubles and fixtures manage (or intentionally break) disposal themselves --
+# fakes that throw on Dispose, or objects tracked in a shared _disposables list.
+dotnet_diagnostic.CA2000.severity = none
+dotnet_diagnostic.CA2215.severity = none
