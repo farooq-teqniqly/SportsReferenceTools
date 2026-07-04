@@ -114,6 +114,24 @@ namespace Teqniqly.SportsReferenceClient.Common.Tests
         }
 
         [Fact]
+        public void Configure_CalledTwice_DoesNotDuplicateHeaders()
+        {
+            var (client, _) = CreateClient();
+
+            client.Configure(Configuration(BaseAddressValue), BaseAddressKey);
+            var headers = client.DefaultRequestHeaders;
+            var acceptCount = headers.GetValues("Accept").Count();
+            var languageCount = headers.GetValues("Accept-Language").Count();
+            var userAgentCount = headers.GetValues("User-Agent").Count();
+
+            client.Configure(Configuration(BaseAddressValue), BaseAddressKey);
+
+            Assert.Equal(acceptCount, headers.GetValues("Accept").Count());
+            Assert.Equal(languageCount, headers.GetValues("Accept-Language").Count());
+            Assert.Equal(userAgentCount, headers.GetValues("User-Agent").Count());
+        }
+
+        [Fact]
         public void Configure_ReturnsSameClient()
         {
             var (client, _) = CreateClient();
@@ -354,6 +372,39 @@ namespace Teqniqly.SportsReferenceClient.Common.Tests
             await Assert.ThrowsAnyAsync<Exception>(async () => await stream.DisposeAsync());
 
             Assert.True(body.Disposed);
+        }
+
+        [Fact]
+        public async Task DisposeAsync_DisposesInnerExactlyOnce()
+        {
+            // Content is separate from inner so the count reflects only inner's own disposal.
+            var inner = new DisposeCountingStream();
+            var response = new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(string.Empty),
+            };
+            _disposables.Add(response);
+            var stream = new ResponseOwningStream(response, inner);
+
+            await stream.DisposeAsync();
+
+            Assert.Equal(1, inner.DisposeCount);
+        }
+
+        // A stream that counts how many times it is disposed, to prove disposal is not re-entered.
+        private sealed class DisposeCountingStream : MemoryStream
+        {
+            public int DisposeCount { get; private set; }
+
+            protected override void Dispose(bool disposing)
+            {
+                if (disposing)
+                {
+                    DisposeCount++;
+                }
+
+                base.Dispose(disposing);
+            }
         }
 
         // Content whose read stream cannot be created, to exercise the ReadAsStreamAsync failure

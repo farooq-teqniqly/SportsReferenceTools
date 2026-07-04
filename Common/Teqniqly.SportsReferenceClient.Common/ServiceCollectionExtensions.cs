@@ -53,10 +53,7 @@ namespace Teqniqly.SportsReferenceClient.Common
         // the response; without this the returned stream would be raw compressed bytes.
         internal static HttpMessageHandler CreatePrimaryHandler()
         {
-            return new SocketsHttpHandler
-            {
-                AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
-            };
+            return new SocketsHttpHandler { AutomaticDecompression = DecompressionMethods.All };
         }
     }
 }

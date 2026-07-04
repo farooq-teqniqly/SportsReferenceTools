@@ -9,6 +9,7 @@ namespace Teqniqly.SportsReferenceClient.Common
     {
         private readonly HttpResponseMessage _response;
         private readonly Stream _inner;
+        private bool _disposed;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ResponseOwningStream"/> class.
@@ -83,32 +84,46 @@ namespace Teqniqly.SportsReferenceClient.Common
         /// <inheritdoc />
         protected override void Dispose(bool disposing)
         {
-            if (disposing)
+            // Guard against re-entry: base.DisposeAsync() calls Dispose(), so resources must not be
+            // disposed twice. finally ensures the response is disposed even if the inner throws, and
+            // that base.Dispose always runs.
+            try
             {
-                // finally so the response is disposed even if the inner stream's disposal throws.
-                try
+                if (disposing && !_disposed)
                 {
-                    _inner.Dispose();
-                }
-                finally
-                {
-                    _response.Dispose();
+                    _disposed = true;
+
+                    try
+                    {
+                        _inner.Dispose();
+                    }
+                    finally
+                    {
+                        _response.Dispose();
+                    }
                 }
             }
-
-            base.Dispose(disposing);
+            finally
+            {
+                base.Dispose(disposing);
+            }
         }
 
         /// <inheritdoc />
         public override async ValueTask DisposeAsync()
         {
-            try
+            if (!_disposed)
             {
-                await _inner.DisposeAsync().ConfigureAwait(false);
-            }
-            finally
-            {
-                _response.Dispose();
+                _disposed = true;
+
+                try
+                {
+                    await _inner.DisposeAsync().ConfigureAwait(false);
+                }
+                finally
+                {
+                    _response.Dispose();
+                }
             }
 
             await base.DisposeAsync().ConfigureAwait(false);

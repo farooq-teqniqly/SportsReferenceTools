@@ -106,7 +106,7 @@ namespace Teqniqly.SportsReferenceClient.Common.Tests
         }
 
         [Fact]
-        public void CreatePrimaryHandler_EnablesGzipAndDeflateDecompression()
+        public void CreatePrimaryHandler_EnablesGzipDeflateAndBrotliDecompression()
         {
             using var handler = ServiceCollectionExtensions.CreatePrimaryHandler();
 
@@ -114,6 +114,7 @@ namespace Teqniqly.SportsReferenceClient.Common.Tests
 
             Assert.True(decompression.HasFlag(System.Net.DecompressionMethods.GZip));
             Assert.True(decompression.HasFlag(System.Net.DecompressionMethods.Deflate));
+            Assert.True(decompression.HasFlag(System.Net.DecompressionMethods.Brotli));
         }
     }
 }
