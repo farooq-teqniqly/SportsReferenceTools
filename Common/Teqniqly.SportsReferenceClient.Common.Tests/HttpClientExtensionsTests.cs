@@ -7,7 +7,7 @@ namespace Teqniqly.SportsReferenceClient.Common.Tests
 {
     public sealed class HttpClientExtensionsTests : IDisposable
     {
-        private const string BaseAddressKey = "BaseAddresses:BaseballReference:ScheduleClient";
+        private const string BaseAddressKey = "BaseAddresses:Test:ScheduleClient";
         private const string BaseAddressValue = "https://example.test/";
 
         private readonly List<IDisposable> _disposables = [];
@@ -92,23 +92,23 @@ namespace Teqniqly.SportsReferenceClient.Common.Tests
             Assert.Equal(new Uri(BaseAddressValue), client.BaseAddress);
 
             var headers = client.DefaultRequestHeaders;
-            var accept = string.Join(",", headers.GetValues("Accept"));
+            var accept = string.Join(",", headers.GetValues(HttpHeaderNames.Accept));
 
             Assert.Contains("text/html", accept, StringComparison.Ordinal);
             Assert.Contains("image/webp", accept, StringComparison.Ordinal);
 
             // Accept-Encoding is intentionally not set here (handled by AutomaticDecompression).
-            Assert.False(headers.Contains("Accept-Encoding"));
+            Assert.False(headers.Contains(HttpHeaderNames.AcceptEncoding));
 
             Assert.Contains(
                 "en-US",
-                string.Join(",", headers.GetValues("Accept-Language")),
+                string.Join(",", headers.GetValues(HttpHeaderNames.AcceptLanguage)),
                 StringComparison.Ordinal
             );
 
             Assert.Contains(
                 "Chrome/120.0.0.0",
-                string.Join(" ", headers.GetValues("User-Agent")),
+                string.Join(" ", headers.GetValues(HttpHeaderNames.UserAgent)),
                 StringComparison.Ordinal
             );
         }
@@ -120,15 +120,15 @@ namespace Teqniqly.SportsReferenceClient.Common.Tests
 
             client.Configure(Configuration(BaseAddressValue), BaseAddressKey);
             var headers = client.DefaultRequestHeaders;
-            var acceptCount = headers.GetValues("Accept").Count();
-            var languageCount = headers.GetValues("Accept-Language").Count();
-            var userAgentCount = headers.GetValues("User-Agent").Count();
+            var acceptCount = headers.GetValues(HttpHeaderNames.Accept).Count();
+            var languageCount = headers.GetValues(HttpHeaderNames.AcceptLanguage).Count();
+            var userAgentCount = headers.GetValues(HttpHeaderNames.UserAgent).Count();
 
             client.Configure(Configuration(BaseAddressValue), BaseAddressKey);
 
-            Assert.Equal(acceptCount, headers.GetValues("Accept").Count());
-            Assert.Equal(languageCount, headers.GetValues("Accept-Language").Count());
-            Assert.Equal(userAgentCount, headers.GetValues("User-Agent").Count());
+            Assert.Equal(acceptCount, headers.GetValues(HttpHeaderNames.Accept).Count());
+            Assert.Equal(languageCount, headers.GetValues(HttpHeaderNames.AcceptLanguage).Count());
+            Assert.Equal(userAgentCount, headers.GetValues(HttpHeaderNames.UserAgent).Count());
         }
 
         [Fact]

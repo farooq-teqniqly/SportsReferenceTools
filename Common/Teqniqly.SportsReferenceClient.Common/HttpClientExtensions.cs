@@ -35,51 +35,8 @@ namespace Teqniqly.SportsReferenceClient.Common
             ArgumentNullException.ThrowIfNull(configuration);
             ArgumentException.ThrowIfNullOrWhiteSpace(baseAddressKey);
 
-            var baseAddress = configuration[baseAddressKey];
-
-            if (string.IsNullOrWhiteSpace(baseAddress))
-            {
-                throw new InvalidOperationException(
-                    $"Configuration key '{baseAddressKey}' is missing or empty."
-                );
-            }
-
-            // A trailing slash is required so a relative request URI resolves under the base path
-            // rather than replacing its last segment.
-            if (!baseAddress.EndsWith('/'))
-            {
-                baseAddress += "/";
-            }
-
-            if (!Uri.TryCreate(baseAddress, UriKind.Absolute, out var baseUri))
-            {
-                throw new InvalidOperationException(
-                    $"Configuration value at '{baseAddressKey}' is not a valid absolute URI: '{baseAddress}'."
-                );
-            }
-
-            client.BaseAddress = baseUri;
-
-            var headers = client.DefaultRequestHeaders;
-
-            // Remove-then-add so calling Configure more than once on the same client is idempotent
-            // rather than duplicating header values.
-            headers.Remove("Accept");
-            headers.Add(
-                "Accept",
-                "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"
-            );
-
-            headers.Remove("Accept-Language");
-            headers.Add("Accept-Language", "en-US,en;q=0.5");
-
-            // Accept-Encoding is negotiated by the primary handler's AutomaticDecompression so the
-            // response is transparently decompressed; adding it here would fight that.
-            headers.Remove("User-Agent");
-            headers.Add(
-                "User-Agent",
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-            );
+            SetBaseAddress(client, configuration, baseAddressKey);
+            AddBrowserLikeHeaders(client);
 
             return client;
         }
@@ -132,6 +89,64 @@ namespace Teqniqly.SportsReferenceClient.Common
 
             // Ownership transfers to the caller: disposing the returned stream disposes the response.
             return new ResponseOwningStream(response, stream);
+        }
+
+        private static void AddBrowserLikeHeaders(HttpClient client)
+        {
+            var headers = client.DefaultRequestHeaders;
+
+            // Remove-then-add so calling Configure more than once on the same client is idempotent
+            // rather than duplicating header values.
+            headers.Remove(HttpHeaderNames.Accept);
+
+            headers.Add(
+                HttpHeaderNames.Accept,
+                "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"
+            );
+
+            headers.Remove(HttpHeaderNames.AcceptLanguage);
+            headers.Add(HttpHeaderNames.AcceptLanguage, "en-US,en;q=0.5");
+
+            // Accept-Encoding is negotiated by the primary handler's AutomaticDecompression so the
+            // response is transparently decompressed; adding it here would fight that.
+            headers.Remove(HttpHeaderNames.UserAgent);
+
+            headers.Add(
+                HttpHeaderNames.UserAgent,
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            );
+        }
+
+        private static void SetBaseAddress(
+            HttpClient client,
+            IConfiguration configuration,
+            string baseAddressKey
+        )
+        {
+            var baseAddress = configuration[baseAddressKey];
+
+            if (string.IsNullOrWhiteSpace(baseAddress))
+            {
+                throw new InvalidOperationException(
+                    $"Configuration key '{baseAddressKey}' is missing or empty."
+                );
+            }
+
+            // A trailing slash is required so a relative request URI resolves under the base path
+            // rather than replacing its last segment.
+            if (!baseAddress.EndsWith('/'))
+            {
+                baseAddress += "/";
+            }
+
+            if (!Uri.TryCreate(baseAddress, UriKind.Absolute, out var baseUri))
+            {
+                throw new InvalidOperationException(
+                    $"Configuration value at '{baseAddressKey}' is not a valid absolute URI: '{baseAddress}'."
+                );
+            }
+
+            client.BaseAddress = baseUri;
         }
     }
 }

@@ -1,12 +1,13 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Teqniqly.SportsReferenceClient.Common;
+using BaseballDi = Teqniqly.BaseballReferenceClient.ServiceCollectionExtensions;
 
 namespace Teqniqly.BaseballReferenceClient.Tests
 {
     public sealed class ServiceCollectionExtensionsTests
     {
-        private const string BaseAddressKey = "BaseAddresses:BaseballReference:ScheduleClient";
+        private const string BaseAddressKey = BaseballDi.ScheduleBaseAddressKey;
         private const string ClientName = nameof(IScheduleClient);
         private const string BaseAddressValue = "https://example.test/";
 
@@ -70,23 +71,23 @@ namespace Teqniqly.BaseballReferenceClient.Tests
             // HttpHeaders reformats typed headers (e.g. ";q=" -> "; q="), so assert the header is
             // present and carries a distinctive token rather than pinning the exact rendering.
             var headers = client.DefaultRequestHeaders;
-            var accept = string.Join(",", headers.GetValues("Accept"));
+            var accept = string.Join(",", headers.GetValues(HttpHeaderNames.Accept));
 
             Assert.Contains("text/html", accept, StringComparison.Ordinal);
             Assert.Contains("image/webp", accept, StringComparison.Ordinal);
 
             // Accept-Encoding is intentionally not set here (handled by AutomaticDecompression).
-            Assert.False(headers.Contains("Accept-Encoding"));
+            Assert.False(headers.Contains(HttpHeaderNames.AcceptEncoding));
 
             Assert.Contains(
                 "en-US",
-                string.Join(",", headers.GetValues("Accept-Language")),
+                string.Join(",", headers.GetValues(HttpHeaderNames.AcceptLanguage)),
                 StringComparison.Ordinal
             );
 
             Assert.Contains(
                 "Chrome/120.0.0.0",
-                string.Join(" ", headers.GetValues("User-Agent")),
+                string.Join(" ", headers.GetValues(HttpHeaderNames.UserAgent)),
                 StringComparison.Ordinal
             );
         }
