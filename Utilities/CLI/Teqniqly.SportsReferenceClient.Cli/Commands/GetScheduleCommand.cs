@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Globalization;
 using Spectre.Console;
 using Spectre.Console.Cli;
@@ -91,6 +92,8 @@ namespace Teqniqly.SportsReferenceClient.Cli.Commands
 
             try
             {
+                var stopwatch = Stopwatch.StartNew();
+
                 await using var stream = await _scheduleClient.GetScheduleAsync(
                     settings.Year,
                     cancellationToken
@@ -118,9 +121,11 @@ namespace Teqniqly.SportsReferenceClient.Cli.Commands
                     bytesWritten = file.Length;
                 }
 
+                stopwatch.Stop();
+
                 AnsiConsole.MarkupLineInterpolated(
                     CultureInfo.CurrentCulture,
-                    $"[green]Saved {bytesWritten:N0} bytes to[/] {settings.File}"
+                    $"[green]Saved {bytesWritten:N0} bytes to[/] {settings.File} [green]in[/] {stopwatch.Elapsed.TotalSeconds:N2}s"
                 );
 
                 return 0;
