@@ -15,18 +15,25 @@ namespace Teqniqly.SportsReferenceClient.Cli.Commands
         private const int FirstSeason = 1871;
         private const int FailureExitCode = 1;
         private const int CanceledExitCode = 2;
+        private const int CopyBufferSize = 81920;
 
         private readonly IScheduleClient _scheduleClient;
+        private readonly IAnsiConsole _console;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="GetScheduleCommand"/> class.
         /// </summary>
         /// <param name="scheduleClient">The schedule client used to fetch the page.</param>
-        /// <exception cref="ArgumentNullException"><paramref name="scheduleClient"/> is null.</exception>
-        public GetScheduleCommand(IScheduleClient scheduleClient)
+        /// <param name="console">The console used to write progress and error output.</param>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="scheduleClient"/> or <paramref name="console"/> is null.
+        /// </exception>
+        public GetScheduleCommand(IScheduleClient scheduleClient, IAnsiConsole console)
         {
             ArgumentNullException.ThrowIfNull(scheduleClient);
+            ArgumentNullException.ThrowIfNull(console);
             _scheduleClient = scheduleClient;
+            _console = console;
         }
 
         /// <summary>
@@ -106,11 +113,8 @@ namespace Teqniqly.SportsReferenceClient.Cli.Commands
             {
                 var stopwatch = Stopwatch.StartNew();
 
-                await using var stream = await _scheduleClient.GetScheduleAsync(
-                    settings.Year.Value,
-                    cancellationToken
-                );
-
+                // Resolve and prepare the output path before the network call so an invalid path
+                // fails fast without a wasted request.
                 var fullPath = Path.GetFullPath(settings.File);
                 var directory = Path.GetDirectoryName(fullPath);
 
@@ -118,6 +122,11 @@ namespace Teqniqly.SportsReferenceClient.Cli.Commands
                 {
                     Directory.CreateDirectory(directory);
                 }
+
+                await using var stream = await _scheduleClient.GetScheduleAsync(
+                    settings.Year.Value,
+                    cancellationToken
+                );
 
                 tempFile = $"{fullPath}.download-{Guid.NewGuid():N}.tmp";
 
@@ -128,7 +137,9 @@ namespace Teqniqly.SportsReferenceClient.Cli.Commands
                         tempFile,
                         FileMode.Create,
                         FileAccess.Write,
-                        FileShare.None
+                        FileShare.None,
+                        CopyBufferSize,
+                        useAsync: true
                     )
                 )
                 {
@@ -141,7 +152,7 @@ namespace Teqniqly.SportsReferenceClient.Cli.Commands
 
                 stopwatch.Stop();
 
-                AnsiConsole.MarkupLineInterpolated(
+                _console.MarkupLineInterpolated(
                     CultureInfo.CurrentCulture,
                     $"[green]Saved {bytesWritten:N0} bytes to[/] {settings.File} [green]in[/] {stopwatch.Elapsed.TotalSeconds:N2}s"
                 );
@@ -150,12 +161,12 @@ namespace Teqniqly.SportsReferenceClient.Cli.Commands
             }
             catch (OperationCanceledException)
             {
-                AnsiConsole.MarkupLine("[yellow]Canceled.[/]");
+                _console.MarkupLine("[yellow]Canceled.[/]");
                 return CanceledExitCode;
             }
             catch (HttpRequestException ex)
             {
-                AnsiConsole.MarkupLineInterpolated(
+                _console.MarkupLineInterpolated(
                     CultureInfo.CurrentCulture,
                     $"[red]Download failed:[/] {ex.Message}"
                 );
@@ -163,7 +174,7 @@ namespace Teqniqly.SportsReferenceClient.Cli.Commands
             }
             catch (ArgumentOutOfRangeException ex)
             {
-                AnsiConsole.MarkupLineInterpolated(
+                _console.MarkupLineInterpolated(
                     CultureInfo.CurrentCulture,
                     $"[red]Invalid year:[/] {ex.Message}"
                 );
@@ -177,7 +188,7 @@ namespace Teqniqly.SportsReferenceClient.Cli.Commands
                             or ArgumentException
                 )
             {
-                AnsiConsole.MarkupLineInterpolated(
+                _console.MarkupLineInterpolated(
                     CultureInfo.CurrentCulture,
                     $"[red]Could not write file:[/] {ex.Message}"
                 );

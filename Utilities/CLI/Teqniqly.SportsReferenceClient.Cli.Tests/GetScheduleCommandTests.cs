@@ -10,6 +10,21 @@ namespace Teqniqly.SportsReferenceClient.Cli.Tests
     {
         private readonly List<IDisposable> _disposables = [];
         private readonly List<string> _tempFiles = [];
+        private readonly IAnsiConsole _silentConsole = AnsiConsole.Create(
+            new AnsiConsoleSettings { Out = new AnsiConsoleOutput(TextWriter.Null) }
+        );
+
+        private GetScheduleCommand Command(IScheduleClient client) => new(client, _silentConsole);
+
+        private (IAnsiConsole Console, StringWriter Output) RecordingConsole()
+        {
+            var writer = new StringWriter();
+            _disposables.Add(writer);
+            var console = AnsiConsole.Create(
+                new AnsiConsoleSettings { Out = new AnsiConsoleOutput(writer) }
+            );
+            return (console, writer);
+        }
 
         private MemoryStream Stream(string content)
         {
@@ -41,7 +56,17 @@ namespace Teqniqly.SportsReferenceClient.Cli.Tests
         [Fact]
         public void Constructor_NullScheduleClient_Throws()
         {
-            Assert.Throws<ArgumentNullException>(() => new GetScheduleCommand(null!));
+            Assert.Throws<ArgumentNullException>(() =>
+                new GetScheduleCommand(null!, _silentConsole)
+            );
+        }
+
+        [Fact]
+        public void Constructor_NullConsole_Throws()
+        {
+            Assert.Throws<ArgumentNullException>(() =>
+                new GetScheduleCommand(Substitute.For<IScheduleClient>(), null!)
+            );
         }
 
         [Fact]
@@ -52,7 +77,7 @@ namespace Teqniqly.SportsReferenceClient.Cli.Tests
             client
                 .GetScheduleAsync(2026, Arg.Any<CancellationToken>())
                 .Returns(Task.FromResult<Stream>(Stream(expected)));
-            var command = new GetScheduleCommand(client);
+            var command = Command(client);
             var file = TempFile();
             var settings = new GetScheduleCommand.Settings { Year = 2026, File = file };
 
@@ -69,7 +94,7 @@ namespace Teqniqly.SportsReferenceClient.Cli.Tests
             client
                 .GetScheduleAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
                 .Returns(Task.FromResult<Stream>(Stream("<html/>")));
-            var command = new GetScheduleCommand(client);
+            var command = Command(client);
             var directory = Path.Combine(Path.GetTempPath(), $"sportsref-test-{Guid.NewGuid():N}");
             var file = Path.Combine(directory, "schedule.shtml");
             _tempFiles.Add(file);
@@ -89,7 +114,7 @@ namespace Teqniqly.SportsReferenceClient.Cli.Tests
             client
                 .GetScheduleAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
                 .Returns<Stream>(_ => throw new HttpRequestException("boom"));
-            var command = new GetScheduleCommand(client);
+            var command = Command(client);
             var file = TempFile();
             var settings = new GetScheduleCommand.Settings { Year = 2026, File = file };
 
@@ -108,7 +133,7 @@ namespace Teqniqly.SportsReferenceClient.Cli.Tests
             client
                 .GetScheduleAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
                 .Returns(Task.FromResult<Stream>(brokenStream));
-            var command = new GetScheduleCommand(client);
+            var command = Command(client);
             var file = TempFile();
             var settings = new GetScheduleCommand.Settings { Year = 2026, File = file };
 
@@ -128,28 +153,14 @@ namespace Teqniqly.SportsReferenceClient.Cli.Tests
 #pragma warning disable S3928 // paramName mimics the real "year" argument, not a local parameter.
                 .Returns<Stream>(_ => throw new ArgumentOutOfRangeException("year"));
 #pragma warning restore S3928
-            var command = new GetScheduleCommand(client);
+            var (console, output) = RecordingConsole();
+            var command = new GetScheduleCommand(client, console);
             var settings = new GetScheduleCommand.Settings { Year = 3000, File = TempFile() };
 
-            var writer = new StringWriter();
-            _disposables.Add(writer);
-            var original = AnsiConsole.Console;
-            AnsiConsole.Console = AnsiConsole.Create(
-                new AnsiConsoleSettings { Out = new AnsiConsoleOutput(writer) }
-            );
-
-            int exitCode;
-            try
-            {
-                exitCode = await command.DownloadAsync(settings, CancellationToken.None);
-            }
-            finally
-            {
-                AnsiConsole.Console = original;
-            }
+            var exitCode = await command.DownloadAsync(settings, CancellationToken.None);
 
             Assert.Equal(1, exitCode);
-            Assert.Contains("Invalid year", writer.ToString(), StringComparison.Ordinal);
+            Assert.Contains("Invalid year", output.ToString(), StringComparison.Ordinal);
         }
 
         [Fact]
@@ -159,7 +170,7 @@ namespace Teqniqly.SportsReferenceClient.Cli.Tests
             client
                 .GetScheduleAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
                 .Returns(Task.FromResult<Stream>(Stream("<html/>")));
-            var command = new GetScheduleCommand(client);
+            var command = Command(client);
             var settings = new GetScheduleCommand.Settings
             {
                 Year = 2026,
@@ -172,13 +183,32 @@ namespace Teqniqly.SportsReferenceClient.Cli.Tests
         }
 
         [Fact]
+        public async Task DownloadAsync_InvalidPath_DoesNotCallClient()
+        {
+            var client = Substitute.For<IScheduleClient>();
+            var command = Command(client);
+            var settings = new GetScheduleCommand.Settings
+            {
+                Year = 2026,
+                File = "bad\0path.shtml",
+            };
+
+            var exitCode = await command.DownloadAsync(settings, CancellationToken.None);
+
+            Assert.Equal(1, exitCode);
+            await client
+                .DidNotReceive()
+                .GetScheduleAsync(Arg.Any<int>(), Arg.Any<CancellationToken>());
+        }
+
+        [Fact]
         public async Task DownloadAsync_Canceled_ReturnsTwo()
         {
             var client = Substitute.For<IScheduleClient>();
             client
                 .GetScheduleAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
                 .Returns<Stream>(_ => throw new OperationCanceledException());
-            var command = new GetScheduleCommand(client);
+            var command = Command(client);
             var settings = new GetScheduleCommand.Settings { Year = 2026, File = TempFile() };
 
             var exitCode = await command.DownloadAsync(settings, CancellationToken.None);
@@ -189,7 +219,7 @@ namespace Teqniqly.SportsReferenceClient.Cli.Tests
         [Fact]
         public async Task DownloadAsync_NullSettings_Throws()
         {
-            var command = new GetScheduleCommand(Substitute.For<IScheduleClient>());
+            var command = Command(Substitute.For<IScheduleClient>());
 
             await Assert.ThrowsAsync<ArgumentNullException>(() =>
                 command.DownloadAsync(null!, CancellationToken.None)

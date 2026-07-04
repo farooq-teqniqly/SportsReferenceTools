@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Spectre.Console;
 using Spectre.Console.Cli;
 using Teqniqly.BaseballReferenceClient;
 using Teqniqly.SportsReferenceClient.Cli;
@@ -12,6 +13,7 @@ var configuration = new ConfigurationBuilder()
     .Build();
 
 var services = new ServiceCollection().AddBaseballReferenceClient(configuration);
+services.AddSingleton(AnsiConsole.Console);
 
 var app = new CommandApp(new TypeRegistrar(services));
 
