@@ -87,7 +87,7 @@ for ($year = $StartYear; $year -le $EndYear; $year++) {
 
     Write-Host "Downloading $year schedule -> $filePath"
 
-    & dotnet run --no-build -c Release --project $cliProject -- baseball schedule get --year $year --file $filePath
+    & dotnet run --no-build --no-restore -c Release --project $cliProject -- baseball schedule get --year $year --file $filePath
     if ($LASTEXITCODE -ne 0) {
         Write-Warning "CLI exited with code $LASTEXITCODE for year $year."
         $failedYears += $year
