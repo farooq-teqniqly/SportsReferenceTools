@@ -1,0 +1,226 @@
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Globalization;
+using Spectre.Console;
+using Spectre.Console.Cli;
+using Teqniqly.SportsReferenceClient.Common;
+
+namespace Teqniqly.SportsReferenceClient.Cli.Commands
+{
+    /// <summary>
+    /// Downloads a baseball season schedule page and writes it verbatim to a file.
+    /// </summary>
+    internal sealed class GetScheduleCommand : AsyncCommand<GetScheduleCommand.Settings>
+    {
+        private const int FirstSeason = 1871;
+        private const int FailureExitCode = 1;
+        private const int CanceledExitCode = 2;
+        private const int CopyBufferSize = 81920;
+
+        private readonly IScheduleClient _scheduleClient;
+        private readonly IAnsiConsole _console;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="GetScheduleCommand"/> class.
+        /// </summary>
+        /// <param name="scheduleClient">The schedule client used to fetch the page.</param>
+        /// <param name="console">The console used to write progress and error output.</param>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="scheduleClient"/> or <paramref name="console"/> is null.
+        /// </exception>
+        public GetScheduleCommand(IScheduleClient scheduleClient, IAnsiConsole console)
+        {
+            ArgumentNullException.ThrowIfNull(scheduleClient);
+            ArgumentNullException.ThrowIfNull(console);
+            _scheduleClient = scheduleClient;
+            _console = console;
+        }
+
+        /// <summary>
+        /// Options for the <c>schedule get</c> command.
+        /// </summary>
+        internal sealed class Settings : CommandSettings
+        {
+            /// <summary>Gets the season year to download.</summary>
+            [CommandOption("--year")]
+            [Description("Season year (1871..current UTC year).")]
+            public int? Year { get; init; }
+
+            /// <summary>Gets the output path for the raw <c>.shtml</c> file.</summary>
+            [CommandOption("--file")]
+            [Description("Output path for the raw .shtml file.")]
+            public required string File { get; init; }
+
+            /// <inheritdoc />
+            public override ValidationResult Validate()
+            {
+                if (string.IsNullOrWhiteSpace(File))
+                {
+                    return ValidationResult.Error("--file is required.");
+                }
+
+                if (Year is null)
+                {
+                    return ValidationResult.Error("--year is required.");
+                }
+
+                var currentYear = DateTime.UtcNow.Year;
+
+                if (Year < FirstSeason || Year > currentYear)
+                {
+                    return ValidationResult.Error(
+                        $"--year must be between {FirstSeason} and {currentYear}."
+                    );
+                }
+
+                return ValidationResult.Success();
+            }
+        }
+
+        /// <inheritdoc />
+        protected override async Task<int> ExecuteAsync(
+            CommandContext context,
+            Settings settings,
+            CancellationToken cancellationToken
+        )
+        {
+            ArgumentNullException.ThrowIfNull(settings);
+            return await DownloadAsync(settings, cancellationToken);
+        }
+
+        /// <summary>
+        /// Fetches the schedule for <paramref name="settings"/> and writes it to the target file.
+        /// </summary>
+        /// <param name="settings">The validated command options.</param>
+        /// <param name="cancellationToken">A token to cancel the download.</param>
+        /// <returns>The process exit code: 0 on success, non-zero on failure or cancellation.</returns>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="settings"/> is null, or its <see cref="Settings.Year"/> is null.
+        /// </exception>
+        internal async Task<int> DownloadAsync(
+            Settings settings,
+            CancellationToken cancellationToken = default
+        )
+        {
+            ArgumentNullException.ThrowIfNull(settings);
+            ArgumentNullException.ThrowIfNull(settings.Year);
+
+            // Write to a temp file in the target directory and atomically move it into place on
+            // success, so a mid-copy failure or cancellation never leaves a partial file behind.
+            string? tempFile = null;
+
+            try
+            {
+                var stopwatch = Stopwatch.StartNew();
+
+                // Resolve and prepare the output path before the network call so an invalid path
+                // fails fast without a wasted request.
+                var fullPath = Path.GetFullPath(settings.File);
+                var directory = Path.GetDirectoryName(fullPath);
+
+                if (!string.IsNullOrEmpty(directory))
+                {
+                    Directory.CreateDirectory(directory);
+                }
+
+                await using var stream = await _scheduleClient.GetScheduleAsync(
+                    settings.Year.Value,
+                    cancellationToken
+                );
+
+                tempFile = $"{fullPath}.download-{Guid.NewGuid():N}.tmp";
+
+                long bytesWritten;
+
+                await using (
+                    var file = new FileStream(
+                        tempFile,
+                        FileMode.Create,
+                        FileAccess.Write,
+                        FileShare.None,
+                        CopyBufferSize,
+                        useAsync: true
+                    )
+                )
+                {
+                    await stream.CopyToAsync(file, cancellationToken);
+                    bytesWritten = file.Length;
+                }
+
+                File.Move(tempFile, fullPath, overwrite: true);
+                tempFile = null;
+
+                stopwatch.Stop();
+
+                _console.MarkupLineInterpolated(
+                    CultureInfo.CurrentCulture,
+                    $"[green]Saved {bytesWritten:N0} bytes to[/] {settings.File} [green]in[/] {stopwatch.Elapsed.TotalSeconds:N2}s"
+                );
+
+                return 0;
+            }
+            catch (OperationCanceledException)
+            {
+                _console.MarkupLine("[yellow]Canceled.[/]");
+                return CanceledExitCode;
+            }
+            catch (HttpRequestException ex)
+            {
+                _console.MarkupLineInterpolated(
+                    CultureInfo.CurrentCulture,
+                    $"[red]Download failed:[/] {ex.Message}"
+                );
+                return FailureExitCode;
+            }
+            catch (ArgumentOutOfRangeException ex)
+            {
+                _console.MarkupLineInterpolated(
+                    CultureInfo.CurrentCulture,
+                    $"[red]Invalid year:[/] {ex.Message}"
+                );
+                return FailureExitCode;
+            }
+            catch (Exception ex)
+                when (ex
+                        is IOException
+                            or UnauthorizedAccessException
+                            or NotSupportedException
+                            or ArgumentException
+                )
+            {
+                _console.MarkupLineInterpolated(
+                    CultureInfo.CurrentCulture,
+                    $"[red]Could not write file:[/] {ex.Message}"
+                );
+                return FailureExitCode;
+            }
+            finally
+            {
+                if (tempFile is not null)
+                {
+                    TryDeleteTempFile(tempFile);
+                }
+            }
+        }
+
+        private static void TryDeleteTempFile(string path)
+        {
+            try
+            {
+                File.Delete(path);
+            }
+            catch (Exception ex)
+                when (ex
+                        is IOException
+                            or UnauthorizedAccessException
+                            or ArgumentException
+                            or NotSupportedException
+                )
+            {
+                // Best-effort cleanup running in a finally: swallow every failure the callers'
+                // catch filter handles, so a delete error can never escape and mask the original
+                // exception (a leftover temp file is the lesser evil).
+            }
+        }
+    }
+}

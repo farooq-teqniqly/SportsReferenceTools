@@ -19,4 +19,8 @@
             Id="cb2c415f-e531-4e7d-89f2-860e88d13962"
         />
     </Folder>
+    <Folder Name="/Utilities/">
+        <Project Path="Utilities/CLI/Teqniqly.SportsReferenceClient.Cli.Tests/Teqniqly.SportsReferenceClient.Cli.Tests.csproj" />
+        <Project Path="Utilities/CLI/Teqniqly.SportsReferenceClient.Cli/Teqniqly.SportsReferenceClient.Cli.csproj" />
+    </Folder>
 </Solution>
