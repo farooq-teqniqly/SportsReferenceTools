@@ -85,8 +85,15 @@ namespace Teqniqly.SportsReferenceClient.Common
         {
             if (disposing)
             {
-                _inner.Dispose();
-                _response.Dispose();
+                // finally so the response is disposed even if the inner stream's disposal throws.
+                try
+                {
+                    _inner.Dispose();
+                }
+                finally
+                {
+                    _response.Dispose();
+                }
             }
 
             base.Dispose(disposing);
@@ -95,8 +102,15 @@ namespace Teqniqly.SportsReferenceClient.Common
         /// <inheritdoc />
         public override async ValueTask DisposeAsync()
         {
-            await _inner.DisposeAsync().ConfigureAwait(false);
-            _response.Dispose();
+            try
+            {
+                await _inner.DisposeAsync().ConfigureAwait(false);
+            }
+            finally
+            {
+                _response.Dispose();
+            }
+
             await base.DisposeAsync().ConfigureAwait(false);
         }
     }

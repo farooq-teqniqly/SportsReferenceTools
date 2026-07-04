@@ -203,7 +203,7 @@ namespace Teqniqly.SportsReferenceClient.Common.Tests
                 )
                 .Returns(Response(HttpStatusCode.OK));
 
-            await client.GetPageAsync(uri, CancellationToken.None);
+            await using var stream = await client.GetPageAsync(uri, CancellationToken.None);
 
             Assert.NotNull(captured);
             Assert.Equal(HttpMethod.Get, captured!.Method);
@@ -306,6 +306,94 @@ namespace Teqniqly.SportsReferenceClient.Common.Tests
             await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
                 client.GetPageAsync(new Uri(BaseAddressValue), cts.Token)
             );
+        }
+
+        [Fact]
+        public async Task GetPageAsync_ReadStreamThrows_DisposesResponse()
+        {
+            var (client, handler) = CreateClient();
+            var content = new ThrowingContent();
+            var response = new HttpResponseMessage(HttpStatusCode.OK) { Content = content };
+            _disposables.Add(response);
+            handler
+                .MockSendAsync(Arg.Any<HttpRequestMessage>(), Arg.Any<CancellationToken>())
+                .Returns(response);
+
+            await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                client.GetPageAsync(new Uri(BaseAddressValue), CancellationToken.None)
+            );
+
+            Assert.True(content.Disposed);
+        }
+
+        [Fact]
+        public void Dispose_InnerThrows_StillDisposesResponse()
+        {
+            var body = new TrackingStream("x");
+            var response = new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StreamContent(body),
+            };
+            var stream = new ResponseOwningStream(response, new ThrowOnDisposeStream());
+
+            Assert.ThrowsAny<Exception>(stream.Dispose);
+
+            Assert.True(body.Disposed);
+        }
+
+        [Fact]
+        public async Task DisposeAsync_InnerThrows_StillDisposesResponse()
+        {
+            var body = new TrackingStream("x");
+            var response = new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StreamContent(body),
+            };
+            var stream = new ResponseOwningStream(response, new ThrowOnDisposeStream());
+
+            await Assert.ThrowsAnyAsync<Exception>(async () => await stream.DisposeAsync());
+
+            Assert.True(body.Disposed);
+        }
+
+        // Content whose read stream cannot be created, to exercise the ReadAsStreamAsync failure
+        // path in GetPageAsync.
+        private sealed class ThrowingContent : HttpContent
+        {
+            public bool Disposed { get; private set; }
+
+            protected override Task SerializeToStreamAsync(
+                Stream stream,
+                TransportContext? context
+            ) => throw new InvalidOperationException("boom");
+
+            protected override Task<Stream> CreateContentReadStreamAsync(
+                CancellationToken cancellationToken
+            ) => throw new InvalidOperationException("boom");
+
+            protected override bool TryComputeLength(out long length)
+            {
+                length = 0;
+                return false;
+            }
+
+            protected override void Dispose(bool disposing)
+            {
+                if (disposing)
+                {
+                    Disposed = true;
+                }
+
+                base.Dispose(disposing);
+            }
+        }
+
+        // A stream that throws on disposal, to prove ResponseOwningStream still disposes the
+        // response when the inner stream's disposal fails.
+        private sealed class ThrowOnDisposeStream : MemoryStream
+        {
+            protected override void Dispose(bool disposing) =>
+                throw new IOException("dispose boom");
         }
     }
 }

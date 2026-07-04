@@ -105,19 +105,20 @@ namespace Teqniqly.SportsReferenceClient.Common
                 .SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
                 .ConfigureAwait(false);
 
+            Stream stream;
+
             try
             {
                 response.EnsureSuccessStatusCode();
+                stream = await response
+                    .Content.ReadAsStreamAsync(cancellationToken)
+                    .ConfigureAwait(false);
             }
             catch
             {
                 response.Dispose();
                 throw;
             }
-
-            var stream = await response
-                .Content.ReadAsStreamAsync(cancellationToken)
-                .ConfigureAwait(false);
 
             // Ownership transfers to the caller: disposing the returned stream disposes the response.
             return new ResponseOwningStream(response, stream);

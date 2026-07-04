@@ -69,14 +69,21 @@ namespace Teqniqly.BaseballReferenceClient.Tests
         public async Task GetScheduleAsync_BoundaryYears_DoNotThrow()
         {
             var (client, handler) = CreateClient();
+            // Fresh response per call: each returned stream disposes its own response.
             handler
                 .MockSendAsync(Arg.Any<HttpRequestMessage>(), Arg.Any<CancellationToken>())
-                .Returns(Response(HttpStatusCode.OK));
+                .Returns(_ => Response(HttpStatusCode.OK));
 
-            Assert.NotNull(await client.GetScheduleAsync(1871, CancellationToken.None));
-            Assert.NotNull(
-                await client.GetScheduleAsync(DateTime.UtcNow.Year, CancellationToken.None)
+            await using (var first = await client.GetScheduleAsync(1871, CancellationToken.None))
+            {
+                Assert.NotNull(first);
+            }
+
+            await using var current = await client.GetScheduleAsync(
+                DateTime.UtcNow.Year,
+                CancellationToken.None
             );
+            Assert.NotNull(current);
         }
 
         [Theory]
@@ -94,7 +101,7 @@ namespace Teqniqly.BaseballReferenceClient.Tests
                 )
                 .Returns(Response(HttpStatusCode.OK));
 
-            await client.GetScheduleAsync(year, CancellationToken.None);
+            await using var stream = await client.GetScheduleAsync(year, CancellationToken.None);
 
             Assert.NotNull(captured);
             Assert.Equal(HttpMethod.Get, captured!.Method);

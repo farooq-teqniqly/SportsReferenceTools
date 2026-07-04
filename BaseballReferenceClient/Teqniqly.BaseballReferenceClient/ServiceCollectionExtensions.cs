@@ -33,6 +33,7 @@ namespace Teqniqly.BaseballReferenceClient
         )
         {
             ArgumentNullException.ThrowIfNull(services);
+            ArgumentNullException.ThrowIfNull(configuration);
 
             services.AddSportsReferenceHttpClient<IScheduleClient, ScheduleClient>(
                 configuration,
