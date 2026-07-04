@@ -10,7 +10,10 @@
         />
     </Folder>
     <Folder Name="/Common/">
-        <Project Path="Common/Teqniqly.SportsReferenceClient.Common.Tests/Teqniqly.SportsReferenceClient.Common.Tests.csproj" />
+        <Project
+            Path="Common/Teqniqly.SportsReferenceClient.Common.Tests/Teqniqly.SportsReferenceClient.Common.Tests.csproj"
+            Id="9f1d910e-662d-4599-9663-78dd56b47410"
+        />
         <Project
             Path="Common/Teqniqly.SportsReferenceClient.Common/Teqniqly.SportsReferenceClient.Common.csproj"
             Id="cb2c415f-e531-4e7d-89f2-860e88d13962"
