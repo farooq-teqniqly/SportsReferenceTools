@@ -40,7 +40,14 @@ if ($MaxDelaySeconds -lt $MinDelaySeconds) {
 }
 
 # Resolve the CLI project relative to this script so the script works from any CWD.
-$cliProject = Join-Path $PSScriptRoot '..\Utilities\CLI\Teqniqly.SportsReferenceClient.Cli\Teqniqly.SportsReferenceClient.Cli.csproj'
+$cliProject = [System.IO.Path]::Combine(
+    $PSScriptRoot,
+    '..',
+    'Utilities',
+    'CLI',
+    'Teqniqly.SportsReferenceClient.Cli',
+    'Teqniqly.SportsReferenceClient.Cli.csproj'
+)
 $cliProject = (Resolve-Path -LiteralPath $cliProject).Path
 
 # Accept an existing directory or create one. Reject an existing non-directory path so we never
