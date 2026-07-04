@@ -6,7 +6,7 @@
 
 ## Command-line interface
 
-`sportsref` is a [Spectre.Console](https://spectreconsole.net) console app for downloading sports-reference data from the terminal (e.g. `sportsref baseball schedule get --year 2026 --file schedule.shtml`). See [`Utilities/CLI/Teqniqly.SportsReferenceClient.Cli/README.md`](Utilities/CLI/Teqniqly.SportsReferenceClient.Cli/README.md) for usage.
+`sportsref` is a [Spectre.Console](https://spectreconsole.net) console app for downloading sports-reference data from the terminal (e.g. `sportsref baseball schedule get --year 2026 --file schedule.shtml`). See [`Utilities/CLI/Teqniqly.SportsReferenceClient.Cli/README.md`](Teqniqly.SportsReferenceClient/Utilities/CLI/Teqniqly.SportsReferenceClient.Cli/README.md) for usage.
 
 ## Developer setup
 
