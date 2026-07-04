@@ -73,6 +73,8 @@ for ($year = $StartYear; $year -le $EndYear; $year++) {
         if (Test-Path -LiteralPath $filePath -PathType Leaf) {
             Write-Host "Skipping $year, file already exists: $filePath"
             continue
+            continue
+
 
         }
 
