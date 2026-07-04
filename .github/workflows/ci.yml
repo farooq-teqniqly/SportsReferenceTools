@@ -44,9 +44,10 @@ jobs:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       SONAR_PROJECT_KEY: farooq-teqniqly_Teqniqly.SportsReferenceClient
       SONAR_ORGANIZATION: farooq-teqniqly
-      # Program.cs is the CLI composition root (top-level entry point); it is wired end-to-end,
+      # The CLI Program.cs is the composition root (top-level entry point); it is wired end-to-end,
       # not unit-tested, and [ExcludeFromCodeCoverage] cannot decorate the synthesized entry point.
-      SONAR_EXCLUSIONS: "**/*.Tests/**,**/*.Benchmarks/**,**/samples/**,**/Program.cs"
+      # Scope the exclusion to that one file so other executables' Program.cs still count.
+      SONAR_EXCLUSIONS: "**/*.Tests/**,**/*.Benchmarks/**,**/samples/**,Utilities/CLI/Teqniqly.SportsReferenceClient.Cli/Program.cs"
 
     steps:
       - name: Checkout code
