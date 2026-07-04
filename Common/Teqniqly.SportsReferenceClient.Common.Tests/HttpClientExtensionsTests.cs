@@ -7,7 +7,7 @@ namespace Teqniqly.SportsReferenceClient.Common.Tests
 {
     public sealed class HttpClientExtensionsTests : IDisposable
     {
-        private const string BaseAddressKey = "BaseAddresses:BaseballReference:ScheduleClient";
+        private const string BaseAddressKey = "BaseAddresses:Test:ScheduleClient";
         private const string BaseAddressValue = "https://example.test/";
 
         private readonly List<IDisposable> _disposables = [];

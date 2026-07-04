@@ -9,7 +9,7 @@ namespace Teqniqly.BaseballReferenceClient
     /// </summary>
     public static class ServiceCollectionExtensions
     {
-        private const string ScheduleBaseAddressKey =
+        internal const string ScheduleBaseAddressKey =
             "BaseAddresses:BaseballReference:ScheduleClient";
 
         /// <summary>

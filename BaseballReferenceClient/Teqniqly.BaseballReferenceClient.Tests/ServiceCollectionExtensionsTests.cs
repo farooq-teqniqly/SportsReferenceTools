@@ -1,12 +1,13 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Teqniqly.SportsReferenceClient.Common;
+using BaseballDi = Teqniqly.BaseballReferenceClient.ServiceCollectionExtensions;
 
 namespace Teqniqly.BaseballReferenceClient.Tests
 {
     public sealed class ServiceCollectionExtensionsTests
     {
-        private const string BaseAddressKey = "BaseAddresses:BaseballReference:ScheduleClient";
+        private const string BaseAddressKey = BaseballDi.ScheduleBaseAddressKey;
         private const string ClientName = nameof(IScheduleClient);
         private const string BaseAddressValue = "https://example.test/";
 
