@@ -49,8 +49,12 @@ namespace Teqniqly.SportsReferenceClient.Common
             return services;
         }
 
-        // The client advertises gzip/deflate, so the primary handler must transparently decompress
-        // the response; without this the returned stream would be raw compressed bytes.
+        /// <summary>
+        /// Creates the primary handler for the typed clients, enabling automatic decompression so
+        /// compressed responses are transparently decoded (otherwise the returned stream would be
+        /// raw compressed bytes).
+        /// </summary>
+        /// <returns>A handler with <see cref="DecompressionMethods.All"/> decompression enabled.</returns>
         internal static HttpMessageHandler CreatePrimaryHandler()
         {
             return new SocketsHttpHandler { AutomaticDecompression = DecompressionMethods.All };
