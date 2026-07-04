@@ -27,13 +27,13 @@ if ($EndYear -lt $StartYear) {
 $currentUtcYear = (Get-Date).ToUniversalTime().Year
 $firstSeason = 1871
 
- if ($StartYear -lt $firstSeason -or $EndYear -gt $currentUtcYear) {
-     throw "Year range must be between $firstSeason and $currentUtcYear (UTC). Got StartYear=$StartYear EndYear=$EndYear."
- }
+if ($StartYear -lt $firstSeason -or $EndYear -gt $currentUtcYear) {
+    throw "Year range must be between $firstSeason and $currentUtcYear (UTC). Got StartYear=$StartYear EndYear=$EndYear."
+}
 
- if ([string]::IsNullOrWhiteSpace($OutputDirectory)) {
-      throw "OutputDirectory must not be empty or whitespace."
-  }
+if ([string]::IsNullOrWhiteSpace($OutputDirectory)) {
+    throw "OutputDirectory must not be empty or whitespace."
+}
 
 if ($MaxDelaySeconds -lt $MinDelaySeconds) {
     throw "MaxDelaySeconds ($MaxDelaySeconds) must be greater than or equal to MinDelaySeconds ($MinDelaySeconds)."
