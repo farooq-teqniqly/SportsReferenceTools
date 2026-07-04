@@ -1,10 +1,28 @@
-name: CI
+name: CI - Teqniqly.SportsReferenceClient
 
 on:
   push:
     branches: [main]
+    paths:
+      - "Teqniqly.SportsReferenceClient/**"
+      - "!Teqniqly.SportsReferenceClient/**/*.md"
+      - "global.json"
+      - "Directory.Build.props"
+      - "Directory.Packages.props"
+      - "nuget.config"
+      - "dotnet-tools.json"
+      - ".github/workflows/ci-sports-reference-client.yml"
   pull_request:
     branches: [main]
+    paths:
+      - "Teqniqly.SportsReferenceClient/**"
+      - "!Teqniqly.SportsReferenceClient/**/*.md"
+      - "global.json"
+      - "Directory.Build.props"
+      - "Directory.Packages.props"
+      - "nuget.config"
+      - "dotnet-tools.json"
+      - ".github/workflows/ci-sports-reference-client.yml"
   workflow_dispatch:
 
 # Least privilege: jobs only read the repo. SonarCloud posts via SONAR_TOKEN, not GITHUB_TOKEN.
@@ -15,6 +33,12 @@ permissions:
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
+
+# Solution and tool manifest live under this subdirectory; run all shell steps there.
+# global.json and Directory.*.props stay at the repo root and still apply (MSBuild walks up).
+defaults:
+  run:
+    working-directory: Teqniqly.SportsReferenceClient
 
 jobs:
   format-check:
