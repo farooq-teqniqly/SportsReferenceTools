@@ -3,31 +3,15 @@ name: CI - Teqniqly.SportsReferenceClient
 on:
   push:
     branches: [main]
-    paths:
-      - "Teqniqly.SportsReferenceClient/**"
-      - "!Teqniqly.SportsReferenceClient/**/*.md"
-      - "global.json"
-      - "Directory.Build.props"
-      - "Directory.Packages.props"
-      - "nuget.config"
-      - "dotnet-tools.json"
-      - ".github/workflows/ci-sports-reference-client.yml"
   pull_request:
     branches: [main]
-    paths:
-      - "Teqniqly.SportsReferenceClient/**"
-      - "!Teqniqly.SportsReferenceClient/**/*.md"
-      - "global.json"
-      - "Directory.Build.props"
-      - "Directory.Packages.props"
-      - "nuget.config"
-      - "dotnet-tools.json"
-      - ".github/workflows/ci-sports-reference-client.yml"
   workflow_dispatch:
 
 # Least privilege: jobs only read the repo. SonarCloud posts via SONAR_TOKEN, not GITHUB_TOKEN.
+# pull-requests: read lets dorny/paths-filter query changed files via the API.
 permissions:
   contents: read
+  pull-requests: read
 
 # Cancel superseded runs for the same ref (e.g. rapid pushes to a PR).
 concurrency:
@@ -41,20 +25,53 @@ defaults:
     working-directory: Teqniqly.SportsReferenceClient
 
 jobs:
-  format-check:
-    name: Format Check
+  # Detect whether any build-relevant file changed. The build/format jobs are required checks in
+  # branch protection, but a docs-only change must not run them -- yet they must still *report* a
+  # status or the PR deadlocks ("Expected -- Waiting for status to be reported"). So the jobs always
+  # run and report; their expensive steps are gated on this job's output and skip on docs-only PRs.
+  changes:
+    name: Detect code changes
     runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
 
     steps:
       - name: Checkout code
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
+      - name: Filter changed paths
+        id: filter
+        uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
+        with:
+          filters: |
+            code:
+              - "Teqniqly.SportsReferenceClient/**"
+              - "!Teqniqly.SportsReferenceClient/**/*.md"
+              - "global.json"
+              - "Directory.Build.props"
+              - "Directory.Packages.props"
+              - "nuget.config"
+              - "dotnet-tools.json"
+              - ".github/workflows/ci-sports-reference-client.yml"
+
+  format-check:
+    name: Format Check
+    runs-on: ubuntu-latest
+    needs: changes
+
+    steps:
+      - name: Checkout code
+        if: needs.changes.outputs.code == 'true'
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
       - name: Setup .NET
+        if: needs.changes.outputs.code == 'true'
         uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
         with:
           global-json-file: global.json
 
       - name: Verify formatting
+        if: needs.changes.outputs.code == 'true'
         run: |
           dotnet tool restore
           dotnet csharpier check .
@@ -62,7 +79,7 @@ jobs:
   sonarcloud-analysis:
     name: Build, Test and SonarCloud Analysis
     runs-on: ubuntu-latest
-    needs: format-check
+    needs: [changes, format-check]
 
     env:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -75,16 +92,19 @@ jobs:
 
     steps:
       - name: Checkout code
+        if: needs.changes.outputs.code == 'true'
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           fetch-depth: 0
 
       - name: Setup .NET
+        if: needs.changes.outputs.code == 'true'
         uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
         with:
           global-json-file: global.json
 
       - name: Cache SonarCloud packages
+        if: needs.changes.outputs.code == 'true'
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: ~/.sonar/cache
@@ -92,15 +112,18 @@ jobs:
           restore-keys: ${{ runner.os }}-sonar
 
       - name: Install SonarCloud Scanner
+        if: needs.changes.outputs.code == 'true'
         run: |
           dotnet tool install --global dotnet-sonarscanner --version 11.0.0
           dotnet tool install --global dotnet-coverage --version 18.1.0
           echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
 
       - name: Restore dependencies
+        if: needs.changes.outputs.code == 'true'
         run: dotnet restore
 
       - name: Begin SonarCloud analysis
+        if: needs.changes.outputs.code == 'true'
         run: |
           dotnet sonarscanner begin \
             /k:"${{ env.SONAR_PROJECT_KEY }}" \
@@ -113,13 +136,16 @@ jobs:
             /d:sonar.coverage.exclusions="${{ env.SONAR_EXCLUSIONS }}"
 
       - name: Build solution
+        if: needs.changes.outputs.code == 'true'
         run: dotnet build --configuration Release --no-restore
 
       - name: Run tests with coverage
+        if: needs.changes.outputs.code == 'true'
         run: |
           dotnet-coverage collect \
             'dotnet test --configuration Release --no-build --verbosity normal' \
             -f xml -o coverage.xml
 
       - name: End SonarCloud analysis
+        if: needs.changes.outputs.code == 'true'
         run: dotnet sonarscanner end /d:sonar.token="${{ env.SONAR_TOKEN }}"
