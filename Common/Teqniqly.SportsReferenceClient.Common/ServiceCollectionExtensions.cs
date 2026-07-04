@@ -1,3 +1,4 @@
+using System.Net;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -18,7 +19,9 @@ namespace Teqniqly.SportsReferenceClient.Common
         /// <param name="configuration">The configuration supplying the client's base address.</param>
         /// <param name="baseAddressKey">The configuration key holding the base address.</param>
         /// <returns>The same <paramref name="services"/> instance, for chaining.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="configuration"/> is null.</exception>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="services"/> or <paramref name="configuration"/> is null.
+        /// </exception>
         /// <exception cref="ArgumentException"><paramref name="baseAddressKey"/> is null or whitespace.</exception>
         /// <exception cref="InvalidOperationException">
         /// No configuration value exists at <paramref name="baseAddressKey"/>; thrown when the
@@ -32,15 +35,28 @@ namespace Teqniqly.SportsReferenceClient.Common
             where TClient : class
             where TImplementation : class, TClient
         {
+            ArgumentNullException.ThrowIfNull(services);
             ArgumentNullException.ThrowIfNull(configuration);
             ArgumentException.ThrowIfNullOrWhiteSpace(baseAddressKey);
 
-            services.AddHttpClient<TClient, TImplementation>(client =>
-            {
-                client.Configure(configuration, baseAddressKey);
-            });
+            services
+                .AddHttpClient<TClient, TImplementation>(client =>
+                {
+                    client.Configure(configuration, baseAddressKey);
+                })
+                .ConfigurePrimaryHttpMessageHandler(CreatePrimaryHandler);
 
             return services;
+        }
+
+        // The client advertises gzip/deflate, so the primary handler must transparently decompress
+        // the response; without this the returned stream would be raw compressed bytes.
+        internal static HttpMessageHandler CreatePrimaryHandler()
+        {
+            return new SocketsHttpHandler
+            {
+                AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
+            };
         }
     }
 }

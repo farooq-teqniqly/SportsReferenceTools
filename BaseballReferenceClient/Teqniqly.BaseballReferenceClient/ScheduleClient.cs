@@ -23,7 +23,15 @@ namespace Teqniqly.BaseballReferenceClient
             _httpClient = httpClient;
         }
 
-        /// <inheritdoc />
+        /// <inheritdoc cref="IScheduleClient.GetScheduleAsync" />
+        /// <remarks>
+        /// The valid <paramref name="year"/> range is 1871 (the first MLB season) through the
+        /// current UTC year, inclusive. The upper bound is UTC-based, so a caller east of UTC on
+        /// the local New Year may need to wait until the season page exists.
+        /// </remarks>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="year"/> is before 1871 or after the current UTC year.
+        /// </exception>
         /// <exception cref="HttpRequestException">The response status is not a success code.</exception>
         public async Task<Stream> GetScheduleAsync(
             int year,

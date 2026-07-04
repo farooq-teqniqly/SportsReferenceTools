@@ -11,9 +11,19 @@ namespace Teqniqly.SportsReferenceClient.Common.Tests
 
         private interface ITestClient;
 
-        private sealed class TestClient(HttpClient httpClient) : ITestClient
+        [System.Diagnostics.CodeAnalysis.SuppressMessage(
+            "Major Code Smell",
+            "S1144:Unused private types or members should be removed",
+            Justification = "Constructed by the typed HttpClient factory via reflection."
+        )]
+        private sealed class TestClient : ITestClient
         {
-            public HttpClient HttpClient { get; } = httpClient;
+            public TestClient(HttpClient httpClient)
+            {
+                HttpClient = httpClient;
+            }
+
+            public HttpClient HttpClient { get; }
         }
 
         private static IConfiguration Configuration(string? baseAddress)
@@ -35,6 +45,19 @@ namespace Teqniqly.SportsReferenceClient.Common.Tests
                     BaseAddressKey
                 )
                 .BuildServiceProvider();
+        }
+
+        [Fact]
+        public void AddSportsReferenceHttpClient_NullServices_Throws()
+        {
+            IServiceCollection services = null!;
+
+            Assert.Throws<ArgumentNullException>(() =>
+                services.AddSportsReferenceHttpClient<ITestClient, TestClient>(
+                    Configuration(BaseAddressValue),
+                    BaseAddressKey
+                )
+            );
         }
 
         [Fact]
@@ -80,6 +103,17 @@ namespace Teqniqly.SportsReferenceClient.Common.Tests
             var client = provider.GetRequiredService<ITestClient>();
 
             Assert.IsType<TestClient>(client);
+        }
+
+        [Fact]
+        public void CreatePrimaryHandler_EnablesGzipAndDeflateDecompression()
+        {
+            using var handler = ServiceCollectionExtensions.CreatePrimaryHandler();
+
+            var decompression = Assert.IsType<SocketsHttpHandler>(handler).AutomaticDecompression;
+
+            Assert.True(decompression.HasFlag(System.Net.DecompressionMethods.GZip));
+            Assert.True(decompression.HasFlag(System.Net.DecompressionMethods.Deflate));
         }
     }
 }

@@ -138,8 +138,8 @@ namespace Teqniqly.BaseballReferenceClient.Tests
             var (client, handler) = CreateClient();
 
             // The handler observes the token it receives; if ScheduleClient forwards the caller's
-            // (cancelled) token, ThrowIfCancellationRequested fires. If it dropped the token, the
-            // handler would see an uncancelled one and return OK instead.
+            // (canceled) token, ThrowIfCancellationRequested fires. If it dropped the token, the
+            // handler would see an uncanceled one and return OK instead.
             handler
                 .MockSendAsync(Arg.Any<HttpRequestMessage>(), Arg.Any<CancellationToken>())
                 .Returns(ci =>

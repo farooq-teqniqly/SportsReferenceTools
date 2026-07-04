@@ -8,7 +8,9 @@ end_of_line = lf
 insert_final_newline = true
 trim_trailing_whitespace = true
 
-# IDE0290: Use primary constructor
+# Primary constructors are disallowed in this repo; use explicit constructors. IDE0290 is the
+# "use primary constructor" suggestion, so it is turned off (there is no built-in analyzer that
+# errors on *using* a primary constructor -- the ban is enforced by convention and code review).
 dotnet_diagnostic.IDE0290.severity = none
 
 # IDE0063: Use simple 'using' statement

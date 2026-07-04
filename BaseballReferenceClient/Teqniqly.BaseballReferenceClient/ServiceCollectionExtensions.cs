@@ -20,16 +20,20 @@ namespace Teqniqly.BaseballReferenceClient
         /// <param name="services">The service collection to add the clients to.</param>
         /// <param name="configuration">The configuration supplying each client's base address.</param>
         /// <returns>The same <paramref name="services"/> instance, for chaining.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="configuration"/> is null.</exception>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="services"/> or <paramref name="configuration"/> is null.
+        /// </exception>
         /// <exception cref="InvalidOperationException">
-        /// A client's base-address configuration key is missing; thrown when that typed client is
-        /// first resolved, not at registration time.
+        /// A client's base-address configuration key is missing or holds an invalid URI; thrown
+        /// when that typed client is first resolved, not at registration time.
         /// </exception>
         public static IServiceCollection AddBaseballReferenceClient(
             this IServiceCollection services,
             IConfiguration configuration
         )
         {
+            ArgumentNullException.ThrowIfNull(services);
+
             services.AddSportsReferenceHttpClient<IScheduleClient, ScheduleClient>(
                 configuration,
                 ScheduleBaseAddressKey

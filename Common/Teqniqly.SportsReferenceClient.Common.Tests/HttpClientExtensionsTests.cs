@@ -97,10 +97,8 @@ namespace Teqniqly.SportsReferenceClient.Common.Tests
             Assert.Contains("text/html", accept, StringComparison.Ordinal);
             Assert.Contains("image/webp", accept, StringComparison.Ordinal);
 
-            var acceptEncoding = string.Join(",", headers.GetValues("Accept-Encoding"));
-
-            Assert.Contains("gzip", acceptEncoding, StringComparison.Ordinal);
-            Assert.Contains("deflate", acceptEncoding, StringComparison.Ordinal);
+            // Accept-Encoding is intentionally not set here (handled by AutomaticDecompression).
+            Assert.False(headers.Contains("Accept-Encoding"));
 
             Assert.Contains(
                 "en-US",
@@ -121,6 +119,28 @@ namespace Teqniqly.SportsReferenceClient.Common.Tests
             var (client, _) = CreateClient();
 
             Assert.Same(client, client.Configure(Configuration(BaseAddressValue), BaseAddressKey));
+        }
+
+        [Fact]
+        public void Configure_BaseAddressWithoutTrailingSlash_IsNormalized()
+        {
+            // A base without a trailing slash makes the relative "{year}-schedule.shtml" replace
+            // the last path segment, so it must be normalized to end with "/".
+            var (client, _) = CreateClient();
+
+            client.Configure(Configuration("https://example.test/leagues/majors"), BaseAddressKey);
+
+            Assert.Equal(new Uri("https://example.test/leagues/majors/"), client.BaseAddress);
+        }
+
+        [Fact]
+        public void Configure_InvalidBaseAddress_Throws()
+        {
+            var (client, _) = CreateClient();
+
+            Assert.Throws<InvalidOperationException>(() =>
+                client.Configure(Configuration("not a valid uri"), BaseAddressKey)
+            );
         }
 
         [Fact]
@@ -222,6 +242,49 @@ namespace Teqniqly.SportsReferenceClient.Common.Tests
             await Assert.ThrowsAsync<HttpRequestException>(() =>
                 client.GetPageAsync(new Uri(BaseAddressValue), CancellationToken.None)
             );
+        }
+
+        private HttpResponseMessage StreamResponse(HttpStatusCode status, Stream content)
+        {
+            var response = new HttpResponseMessage(status) { Content = new StreamContent(content) };
+            _disposables.Add(response);
+            return response;
+        }
+
+        [Fact]
+        public async Task GetPageAsync_DisposingReturnedStream_DisposesResponse()
+        {
+            var (client, handler) = CreateClient();
+            var body = new TrackingStream("<html>page</html>");
+            handler
+                .MockSendAsync(Arg.Any<HttpRequestMessage>(), Arg.Any<CancellationToken>())
+                .Returns(StreamResponse(HttpStatusCode.OK, body));
+
+            var stream = await client.GetPageAsync(
+                new Uri(BaseAddressValue),
+                CancellationToken.None
+            );
+            Assert.False(body.Disposed);
+
+            await stream.DisposeAsync();
+
+            Assert.True(body.Disposed);
+        }
+
+        [Fact]
+        public async Task GetPageAsync_NonSuccess_DisposesResponse()
+        {
+            var (client, handler) = CreateClient();
+            var body = new TrackingStream("not found");
+            handler
+                .MockSendAsync(Arg.Any<HttpRequestMessage>(), Arg.Any<CancellationToken>())
+                .Returns(StreamResponse(HttpStatusCode.NotFound, body));
+
+            await Assert.ThrowsAsync<HttpRequestException>(() =>
+                client.GetPageAsync(new Uri(BaseAddressValue), CancellationToken.None)
+            );
+
+            Assert.True(body.Disposed);
         }
 
         [Fact]

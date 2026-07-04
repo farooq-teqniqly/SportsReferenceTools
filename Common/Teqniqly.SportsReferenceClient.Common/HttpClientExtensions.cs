@@ -10,7 +10,8 @@ namespace Teqniqly.SportsReferenceClient.Common
         /// <summary>
         /// Sets the client's base address from the configuration value at
         /// <paramref name="baseAddressKey"/> and adds the default browser-like request headers
-        /// (Accept, Accept-Language, Accept-Encoding, User-Agent).
+        /// (Accept, Accept-Language, User-Agent). Accept-Encoding is left to the handler's
+        /// automatic decompression.
         /// </summary>
         /// <param name="client">The client to configure.</param>
         /// <param name="configuration">The configuration supplying the base address.</param>
@@ -21,7 +22,8 @@ namespace Teqniqly.SportsReferenceClient.Common
         /// </exception>
         /// <exception cref="ArgumentException"><paramref name="baseAddressKey"/> is null or whitespace.</exception>
         /// <exception cref="InvalidOperationException">
-        /// No configuration value exists at <paramref name="baseAddressKey"/>.
+        /// No configuration value exists at <paramref name="baseAddressKey"/>, or that value is
+        /// not a valid absolute URI.
         /// </exception>
         public static HttpClient Configure(
             this HttpClient client,
@@ -33,12 +35,27 @@ namespace Teqniqly.SportsReferenceClient.Common
             ArgumentNullException.ThrowIfNull(configuration);
             ArgumentException.ThrowIfNullOrWhiteSpace(baseAddressKey);
 
-            client.BaseAddress = new Uri(
+            var baseAddress =
                 configuration[baseAddressKey]
-                    ?? throw new InvalidOperationException(
-                        $"Configuration key '{baseAddressKey}' is missing."
-                    )
-            );
+                ?? throw new InvalidOperationException(
+                    $"Configuration key '{baseAddressKey}' is missing."
+                );
+
+            // A trailing slash is required so a relative request URI resolves under the base path
+            // rather than replacing its last segment.
+            if (!baseAddress.EndsWith('/'))
+            {
+                baseAddress += "/";
+            }
+
+            if (!Uri.TryCreate(baseAddress, UriKind.Absolute, out var baseUri))
+            {
+                throw new InvalidOperationException(
+                    $"Configuration value at '{baseAddressKey}' is not a valid absolute URI: '{baseAddress}'."
+                );
+            }
+
+            client.BaseAddress = baseUri;
 
             client.DefaultRequestHeaders.Add(
                 "Accept",
@@ -46,8 +63,9 @@ namespace Teqniqly.SportsReferenceClient.Common
             );
 
             client.DefaultRequestHeaders.Add("Accept-Language", "en-US,en;q=0.5");
-            client.DefaultRequestHeaders.Add("Accept-Encoding", "gzip, deflate");
 
+            // Accept-Encoding is negotiated by the primary handler's AutomaticDecompression so the
+            // response is transparently decompressed; adding it here would fight that.
             client.DefaultRequestHeaders.Add(
                 "User-Agent",
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
@@ -63,8 +81,9 @@ namespace Teqniqly.SportsReferenceClient.Common
         /// <param name="uri">The page URI to fetch.</param>
         /// <param name="cancellationToken">A token to cancel the request.</param>
         /// <returns>
-        /// A stream over the response content. The caller owns the returned stream and must
-        /// dispose it.
+        /// A stream over the response content, read from the network on demand (the body is not
+        /// buffered into memory). The caller owns the returned stream and must dispose it;
+        /// disposing it also disposes the underlying <see cref="HttpResponseMessage"/>.
         /// </returns>
         /// <exception cref="ArgumentNullException">
         /// <paramref name="client"/> or <paramref name="uri"/> is null.
@@ -81,19 +100,27 @@ namespace Teqniqly.SportsReferenceClient.Common
 
             using var request = new HttpRequestMessage(HttpMethod.Get, uri);
 
-            // Not disposed here: the returned stream is backed by the response content, so the
-            // response must outlive this method. The caller owns the returned stream.
+            // ResponseHeadersRead so the body streams from the socket instead of being buffered.
             var response = await client
-                .SendAsync(request, HttpCompletionOption.ResponseContentRead, cancellationToken)
+                .SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
                 .ConfigureAwait(false);
 
-            response.EnsureSuccessStatusCode();
+            try
+            {
+                response.EnsureSuccessStatusCode();
+            }
+            catch
+            {
+                response.Dispose();
+                throw;
+            }
 
             var stream = await response
                 .Content.ReadAsStreamAsync(cancellationToken)
                 .ConfigureAwait(false);
 
-            return stream;
+            // Ownership transfers to the caller: disposing the returned stream disposes the response.
+            return new ResponseOwningStream(response, stream);
         }
     }
 }

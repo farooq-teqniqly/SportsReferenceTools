@@ -7,7 +7,7 @@ namespace Teqniqly.BaseballReferenceClient.Tests
     public sealed class ServiceCollectionExtensionsTests
     {
         private const string BaseAddressKey = "BaseAddresses:BaseballReference:ScheduleClient";
-        private const string ClientName = "IScheduleClient";
+        private const string ClientName = nameof(IScheduleClient);
         private const string BaseAddressValue = "https://example.test/";
 
         private static IConfiguration BuildConfiguration(string? baseAddress)
@@ -26,6 +26,16 @@ namespace Teqniqly.BaseballReferenceClient.Tests
             return new ServiceCollection()
                 .AddBaseballReferenceClient(BuildConfiguration(baseAddress))
                 .BuildServiceProvider();
+        }
+
+        [Fact]
+        public void AddBaseballReferenceClient_NullServices_Throws()
+        {
+            IServiceCollection services = null!;
+
+            Assert.Throws<ArgumentNullException>(() =>
+                services.AddBaseballReferenceClient(BuildConfiguration(BaseAddressValue))
+            );
         }
 
         [Fact]
@@ -65,10 +75,8 @@ namespace Teqniqly.BaseballReferenceClient.Tests
             Assert.Contains("text/html", accept, StringComparison.Ordinal);
             Assert.Contains("image/webp", accept, StringComparison.Ordinal);
 
-            var acceptEncoding = string.Join(",", headers.GetValues("Accept-Encoding"));
-
-            Assert.Contains("gzip", acceptEncoding, StringComparison.Ordinal);
-            Assert.Contains("deflate", acceptEncoding, StringComparison.Ordinal);
+            // Accept-Encoding is intentionally not set here (handled by AutomaticDecompression).
+            Assert.False(headers.Contains("Accept-Encoding"));
 
             Assert.Contains(
                 "en-US",

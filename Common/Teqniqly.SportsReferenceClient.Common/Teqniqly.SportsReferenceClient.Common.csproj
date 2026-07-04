@@ -12,4 +12,8 @@
         <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
         <PackageReference Include="Microsoft.Extensions.Http" />
     </ItemGroup>
+
+    <ItemGroup>
+        <InternalsVisibleTo Include="Teqniqly.SportsReferenceClient.Common.Tests" />
+    </ItemGroup>
 </Project>

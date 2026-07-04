@@ -37,7 +37,9 @@ A .NET class library that wraps sports-reference data sources. The first client 
 - **Commit messages: Conventional Commits** (`<type>(<scope>)!: <description>`, where scope and
   `!` are optional and a scope must match `[a-z0-9._-]+`), enforced by the `commit-msg` hook.
   Types: `feat fix docs style refactor perf test build ci chore revert`.
-- **U.S. English** spelling in code, comments, and docs.
+- **U.S. English** spelling and grammar in all code, comments, and docs (e.g. "canceled" not
+  "cancelled", "behavior" not "behaviour", "normalize" not "normalise"). Do not "correct" .NET
+  API names that use other spellings (e.g. `CancellationToken`) -- match identifiers exactly.
 - **Default accessibility:** classes are `internal sealed` unless a `public` surface is
   genuinely required (e.g. a library entry point, or a type a framework must discover such as
   xUnit test classes). Abstract/base classes stay `internal` (they can't be `sealed`).
@@ -49,12 +51,25 @@ A .NET class library that wraps sports-reference data sources. The first client 
   it pass (**green**); then clean up with the tests still passing (**refactor**). Do not add or
   change production behavior without a test that first failed. (Non-behavioral edits -- docs,
   formatting, accessibility/signature tweaks like adding a `= default` -- do not need a new test.)
+- **No primary constructors.** Use explicit constructors with backing fields (`_field`), not
+  `class Foo(...)` primary constructors, for classes and structs. `IDE0290` (the "use primary
+  constructor" hint) is set to `none` in `.editorconfig`; no analyzer errors on usage, so this
+  is enforced by convention and review.
+- **Null-guard public/internal entry points.** Every reference-type parameter of a public or
+  internal method (including `this` on extension methods) is guarded before use:
+  `ArgumentNullException.ThrowIfNull(x)` for objects, `ArgumentException.ThrowIfNullOrWhiteSpace(s)`
+  for required strings. Guards come first, in parameter order, before any other work. Document
+  each with an `<exception>` tag. Do not rely on a downstream call to throw for you.
 - **`CancellationToken` parameters** take a default (`CancellationToken cancellationToken = default`)
   and are the last parameter, so callers may omit them.
 - **XML documentation** is required on every `public` and `internal` type and member in library
   (non-test) projects: at minimum a `<summary>`, plus `<param>`, `<returns>`, and `<exception>`
-  where they add information. Use `<inheritdoc />` on interface implementations instead of
-  copying text. Library projects set `<GenerateDocumentationFile>true</GenerateDocumentationFile>`,
+  where they add information. Use an explicit `<inheritdoc />` on every member that overrides or
+  implements a documented base-type/interface member (interface implementations, `override`
+  methods and properties, e.g. `Stream` overrides) instead of copying text or relying on implicit
+  inheritance; add `<inheritdoc />` plus an extra `<exception>`/`<remarks>` tag when the member
+  adds behavior the base does not document. Library projects set
+  `<GenerateDocumentationFile>true</GenerateDocumentationFile>`,
   so missing docs on `public` members fail the build (`CS1591` under `TreatWarningsAsErrors`);
   `internal` members are covered by convention, not the compiler. Test projects are exempt —
   test names document intent.
