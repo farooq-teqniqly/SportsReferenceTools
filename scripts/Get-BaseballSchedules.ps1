@@ -48,8 +48,7 @@ if (Test-Path -LiteralPath $OutputDirectory) {
     }
 }
 else {
-    # New-Item has no -LiteralPath in Windows PowerShell 5.1; -Path does not glob on creation.
-    New-Item -ItemType Directory -Path $OutputDirectory -Force | Out-Null
+    [System.IO.Directory]::CreateDirectory($OutputDirectory) | Out-Null
 }
 $OutputDirectory = (Resolve-Path -LiteralPath $OutputDirectory).Path
 
