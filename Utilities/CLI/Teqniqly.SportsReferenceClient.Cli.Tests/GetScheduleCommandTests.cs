@@ -1,5 +1,6 @@
 using System.Text;
 using NSubstitute;
+using Spectre.Console;
 using Teqniqly.SportsReferenceClient.Cli.Commands;
 using Teqniqly.SportsReferenceClient.Common;
 
@@ -118,6 +119,40 @@ namespace Teqniqly.SportsReferenceClient.Cli.Tests
         }
 
         [Fact]
+        public async Task DownloadAsync_YearOutOfRange_ReturnsOneWithYearMessage()
+        {
+            var client = Substitute.For<IScheduleClient>();
+            client
+                .GetScheduleAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
+                // Mirror the ArgumentOutOfRangeException ScheduleClient throws for a bad year.
+#pragma warning disable S3928 // paramName mimics the real "year" argument, not a local parameter.
+                .Returns<Stream>(_ => throw new ArgumentOutOfRangeException("year"));
+#pragma warning restore S3928
+            var command = new GetScheduleCommand(client);
+            var settings = new GetScheduleCommand.Settings { Year = 3000, File = TempFile() };
+
+            var writer = new StringWriter();
+            _disposables.Add(writer);
+            var original = AnsiConsole.Console;
+            AnsiConsole.Console = AnsiConsole.Create(
+                new AnsiConsoleSettings { Out = new AnsiConsoleOutput(writer) }
+            );
+
+            int exitCode;
+            try
+            {
+                exitCode = await command.DownloadAsync(settings, CancellationToken.None);
+            }
+            finally
+            {
+                AnsiConsole.Console = original;
+            }
+
+            Assert.Equal(1, exitCode);
+            Assert.Contains("Invalid year", writer.ToString(), StringComparison.Ordinal);
+        }
+
+        [Fact]
         public async Task DownloadAsync_InvalidPath_ReturnsOne()
         {
             var client = Substitute.For<IScheduleClient>();
@@ -232,6 +267,7 @@ namespace Teqniqly.SportsReferenceClient.Cli.Tests
                 }
 
                 var n = Math.Min(count, _remaining);
+                Array.Clear(buffer, offset, n);
                 _remaining -= n;
                 return n;
             }

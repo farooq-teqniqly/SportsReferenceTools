@@ -161,6 +161,14 @@ namespace Teqniqly.SportsReferenceClient.Cli.Commands
                 );
                 return FailureExitCode;
             }
+            catch (ArgumentOutOfRangeException ex)
+            {
+                AnsiConsole.MarkupLineInterpolated(
+                    CultureInfo.CurrentCulture,
+                    $"[red]Invalid year:[/] {ex.Message}"
+                );
+                return FailureExitCode;
+            }
             catch (Exception ex)
                 when (ex
                         is IOException
