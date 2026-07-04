@@ -99,6 +99,44 @@ namespace Teqniqly.SportsReferenceClient.Cli.Tests
         }
 
         [Fact]
+        public async Task DownloadAsync_MidStreamFailure_ReturnsOneAndLeavesNoFile()
+        {
+            var brokenStream = new ThrowingStream(bytesBeforeThrow: 8);
+            _disposables.Add(brokenStream);
+            var client = Substitute.For<IScheduleClient>();
+            client
+                .GetScheduleAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
+                .Returns(Task.FromResult<Stream>(brokenStream));
+            var command = new GetScheduleCommand(client);
+            var file = TempFile();
+            var settings = new GetScheduleCommand.Settings { Year = 2026, File = file };
+
+            var exitCode = await command.DownloadAsync(settings, CancellationToken.None);
+
+            Assert.Equal(1, exitCode);
+            Assert.False(File.Exists(file));
+        }
+
+        [Fact]
+        public async Task DownloadAsync_InvalidPath_ReturnsOne()
+        {
+            var client = Substitute.For<IScheduleClient>();
+            client
+                .GetScheduleAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
+                .Returns(Task.FromResult<Stream>(Stream("<html/>")));
+            var command = new GetScheduleCommand(client);
+            var settings = new GetScheduleCommand.Settings
+            {
+                Year = 2026,
+                File = "bad\0path.shtml",
+            };
+
+            var exitCode = await command.DownloadAsync(settings, CancellationToken.None);
+
+            Assert.Equal(1, exitCode);
+        }
+
+        [Fact]
         public async Task DownloadAsync_Canceled_ReturnsTwo()
         {
             var client = Substitute.For<IScheduleClient>();
@@ -151,6 +189,49 @@ namespace Teqniqly.SportsReferenceClient.Cli.Tests
             };
 
             Assert.True(settings.Validate().Successful);
+        }
+
+        private sealed class ThrowingStream : Stream
+        {
+            private int _remaining;
+
+            public ThrowingStream(int bytesBeforeThrow)
+            {
+                _remaining = bytesBeforeThrow;
+            }
+
+            public override bool CanRead => true;
+            public override bool CanSeek => false;
+            public override bool CanWrite => false;
+            public override long Length => throw new NotSupportedException();
+
+            public override long Position
+            {
+                get => throw new NotSupportedException();
+                set => throw new NotSupportedException();
+            }
+
+            public override void Flush() { }
+
+            public override int Read(byte[] buffer, int offset, int count)
+            {
+                if (_remaining <= 0)
+                {
+                    throw new IOException("stream broke mid-copy");
+                }
+
+                var n = Math.Min(count, _remaining);
+                _remaining -= n;
+                return n;
+            }
+
+            public override long Seek(long offset, SeekOrigin origin) =>
+                throw new NotSupportedException();
+
+            public override void SetLength(long value) => throw new NotSupportedException();
+
+            public override void Write(byte[] buffer, int offset, int count) =>
+                throw new NotSupportedException();
         }
     }
 }

@@ -90,6 +90,10 @@ namespace Teqniqly.SportsReferenceClient.Cli.Commands
         {
             ArgumentNullException.ThrowIfNull(settings);
 
+            // Write to a temp file in the target directory and atomically move it into place on
+            // success, so a mid-copy failure or cancellation never leaves a partial file behind.
+            string? tempFile = null;
+
             try
             {
                 var stopwatch = Stopwatch.StartNew();
@@ -99,18 +103,21 @@ namespace Teqniqly.SportsReferenceClient.Cli.Commands
                     cancellationToken
                 );
 
-                var directory = Path.GetDirectoryName(Path.GetFullPath(settings.File));
+                var fullPath = Path.GetFullPath(settings.File);
+                var directory = Path.GetDirectoryName(fullPath);
 
                 if (!string.IsNullOrEmpty(directory))
                 {
                     Directory.CreateDirectory(directory);
                 }
 
+                tempFile = $"{fullPath}.download-{Guid.NewGuid():N}.tmp";
+
                 long bytesWritten;
 
                 await using (
                     var file = new FileStream(
-                        settings.File,
+                        tempFile,
                         FileMode.Create,
                         FileAccess.Write,
                         FileShare.None
@@ -120,6 +127,9 @@ namespace Teqniqly.SportsReferenceClient.Cli.Commands
                     await stream.CopyToAsync(file, cancellationToken);
                     bytesWritten = file.Length;
                 }
+
+                File.Move(tempFile, fullPath, overwrite: true);
+                tempFile = null;
 
                 stopwatch.Stop();
 
@@ -144,13 +154,38 @@ namespace Teqniqly.SportsReferenceClient.Cli.Commands
                 return FailureExitCode;
             }
             catch (Exception ex)
-                when (ex is IOException or UnauthorizedAccessException or NotSupportedException)
+                when (ex
+                        is IOException
+                            or UnauthorizedAccessException
+                            or NotSupportedException
+                            or ArgumentException
+                )
             {
                 AnsiConsole.MarkupLineInterpolated(
                     CultureInfo.CurrentCulture,
                     $"[red]Could not write file:[/] {ex.Message}"
                 );
                 return FailureExitCode;
+            }
+            finally
+            {
+                if (tempFile is not null)
+                {
+                    TryDeleteTempFile(tempFile);
+                }
+            }
+        }
+
+        private static void TryDeleteTempFile(string path)
+        {
+            try
+            {
+                File.Delete(path);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                // Best-effort cleanup; a leftover temp file is preferable to masking the
+                // original failure with a delete error.
             }
         }
     }
